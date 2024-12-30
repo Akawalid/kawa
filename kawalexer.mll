@@ -6,14 +6,30 @@
   exception Error of string
 
   let keyword_or_ident =
-  let h = Hashtbl.create 17 in
-  List.iter (fun (s, k) -> Hashtbl.add h s k)
-    [ "print",    PRINT;
-      "main",     MAIN;
-    ] ;
-  fun s ->
-    try  Hashtbl.find h s
-    with Not_found -> IDENT(s)
+    let h = Hashtbl.create 17 in
+    List.iter (fun (s, k) -> Hashtbl.add h s k)
+      [ "print",    PRINT;
+        "main",     MAIN;
+        "true", TRUE;
+        "false", FALSE;
+        "var", VAR;
+        "attribute", ATTRIBUTE;
+        "method", METHOD;
+        "class",CLASS;
+        "new",NEW;
+        "this",THIS;
+        "if",IF;
+        "else",ELSE;
+        "while",WHILE;
+        "return",RETURN;
+        "print", PRINT;
+        "int", INT;
+        "bool",BOOL;
+        "void",VOID
+      ] ;
+    fun s ->
+      try  Hashtbl.find h s
+      with Not_found -> IDENT(s)
         
 }
 
@@ -32,14 +48,30 @@ rule token = parse
   | number as n  { INT(int_of_string n) }
   | ident as id  { keyword_or_ident id }
 
-  | ";"  { SEMI }
-  | "("  { LPAR }
-  | ")"  { RPAR }
-  | "{"  { BEGIN }
-  | "}"  { END }
+  | ";"   { SEMI }
+  | "("   { LPAR }
+  | ")"   { RPAR }
+  | "{"   { BEGIN }
+  | "}"   { END }
+  | "-"   { SUB }
+  | "!"   { NEG }
+  | "+"   { PLUS }
+  | "="   { ASSIGN }
+  | "*"   { MUL }
+  | "/"   { DIV }
+  | "=="  { EQUAL }
+  | "!="  { NEQ }
+  | "<"   { LT }
+  | "<="  { LE }
+  | ">"   { GT }
+  | ">="  { GE }
+  | "&&"  { AND }
+  | "||"  { OR }
+  | ","   { COMMA }
 
-  | _    { raise (Error ("unknown character : " ^ lexeme lexbuf)) }
   | eof  { EOF }
+  | _    { raise (Error ("unknown character : " ^ lexeme lexbuf)) }
+  
 
 and comment = parse
   | "*/" { () }
