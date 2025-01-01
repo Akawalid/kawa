@@ -1,0 +1,9 @@
+*.cmi
+*.cmo
+*.exe
+*.automaton
+*.conflicts
+*.mli
+
+.vscode
+_build

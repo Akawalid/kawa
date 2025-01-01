@@ -1,14 +1,14 @@
 {
   open Lexing
-  open Kawaparser
+  open Kawaparser 
 
   exception Error of string
 
   let keyword_or_ident =
     let h = Hashtbl.create 17 in
     List.iter (fun (s, k) -> Hashtbl.add h s k)
-      [ "print",    PRINT;
-        "main",     MAIN;
+      [ "print", PRINT;
+        "main", MAIN;
         "true", TRUE;
         "false", FALSE;
         "var", VAR;
@@ -21,10 +21,9 @@
         "else",ELSE;
         "while",WHILE;
         "return",RETURN;
-        "print", PRINT;
-        "int", INT;
-        "bool",BOOL;
-        "void",VOID
+        "int", TINT;
+        "bool",TBOOL;
+        "void",TVOID
       ] ;
     fun s ->
       try  Hashtbl.find h s
