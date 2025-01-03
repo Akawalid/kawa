@@ -10,16 +10,17 @@
 %token MAIN
 %token LPAR RPAR BEGIN END SEMI COMMA DOT
 %token SUB PLUS MUL DIV MOD
-%token NEG EQUAL NEQ LT LE GT GE AND OR TRUE FALSE
+%token NEG OPP EQUAL NEQ LT LE GT GE AND OR TRUE FALSE
 %token ASSIGN PRINT VAR ATTRIBUTE METHOD CLASS EXTENDS NEW THIS IF ELSE
 %token WHILE RETURN TINT TBOOL TVOID
 %token EOF
 
-// %left PLUS MINUS
-// %left TIMES DIV
-// %right POW
-// %nonassoc LT GT
 
+// %nonassoc FALSE TRUE THIS INT RPAR IDENT 
+%left PLUS SUB
+%left MUL DIV
+%nonassoc OPP
+%nonassoc LT GT
 
 %start program
 %type <Kawa.program> program
@@ -121,7 +122,7 @@ expression:
 | uop expression { Unop ($1, $2) }
 | expression bop expression { Binop ($2, $1, $3) }
 | NEW id=IDENT { New id }
-| NEW id=IDENT RPAR args LPAR { NewCstr (id, $4) }
+| NEW id=IDENT LPAR args RPAR { NewCstr (id, $4) }
 | expression DOT id=IDENT LPAR args RPAR { MethCall ($1, id, $5) }
 ;
 
@@ -137,7 +138,7 @@ args:
 
 uop:
 | NEG { Not }
-| SUB { Opp }
+| OPP { Opp }
 ;
 
 bop:

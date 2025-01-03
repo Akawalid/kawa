@@ -27,7 +27,7 @@
         "void",TVOID
       ] ;
     fun s ->
-      try  Hashtbl.find h s
+      try Hashtbl.find h s
       with Not_found -> IDENT(s)
 
   let symbol_or_operator =
@@ -57,7 +57,7 @@
         ",", COMMA;
     ];
     fun s ->
-      try  Some (Hashtbl.find h s)
+      try Some (Hashtbl.find h s)
       with Not_found -> None
 }
 
@@ -74,7 +74,11 @@ rule token = parse
   | "//" [^ '\n']* "\n"  { new_line lexbuf; token lexbuf }
   | "/*"                 { comment lexbuf; token lexbuf }
 
-  | number as n  { INT(int_of_string n) }
+  | number as n  { 
+      if n.[0] = '-' then OPP INT(-int_of_string n) 
+      else INT(int_of_string n)
+    }
+
   | ident as id  { keyword_or_ident id }
 
   | [';' '(' ')' '{' '}' '-' '+' '*' '/' '%' '.'] 
