@@ -47,6 +47,7 @@ rule token = parse
   | ident as id  { keyword_or_ident id }
 
   | ";"   { SEMI }
+  | "."   { DOT }
   | "("   { LPAR }
   | ")"   { RPAR }
   | "{"   { BEGIN }
