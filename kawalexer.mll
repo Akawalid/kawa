@@ -39,7 +39,7 @@
         ")", RPAR;
         "{", BEGIN;
         "}", END;
-        "-", SUB;
+        "-", MINUS;
         "!", NEG;
         "+", PLUS;
         "=", ASSIGN;

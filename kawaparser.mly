@@ -9,18 +9,19 @@
 %token <string> IDENT
 %token MAIN
 %token LPAR RPAR BEGIN END SEMI COMMA DOT
-%token SUB PLUS MUL DIV MOD
-%token NEG OPP EQUAL NEQ LT LE GT GE AND OR TRUE FALSE
+%token MINUS PLUS MUL DIV MOD
+%token NEG EQUAL NEQ LT LE GT GE AND OR TRUE FALSE
 %token ASSIGN PRINT VAR ATTRIBUTE METHOD CLASS EXTENDS NEW THIS IF ELSE
 %token WHILE RETURN TINT TBOOL TVOID
 %token EOF
 
 
-// %nonassoc FALSE TRUE THIS INT RPAR IDENT 
-%left PLUS SUB
+%left EQUAL NEQ LT LE GT GE
+%left AND OR PLUS MINUS
 %left MUL DIV
-%nonassoc OPP
-%nonassoc LT GT
+%left MOD
+%nonassoc OPP (*Inclus NEG, cette priorité est appliquée directement à la regle uop expression*)
+%right DOT
 
 %start program
 %type <Kawa.program> program
@@ -105,7 +106,7 @@ instruction:
   { If (e, lif, lelse) }
 | WHILE e=expression BEGIN li=list(instruction) END { While (e, li) }
 | RETURN e=expression SEMI { Return e } 
-| e=expression { Expr e }
+| e=expression SEMI { Expr e }
 ;
 
 mem:
@@ -119,7 +120,7 @@ expression:
 | THIS { This }
 | mem { Get $1 }
 | LPAR expression RPAR { $2 }
-| uop expression { Unop ($1, $2) }
+| uop expression %prec OPP { Unop ($1, $2) }
 | expression bop expression { Binop ($2, $1, $3) }
 | NEW id=IDENT { New id }
 | NEW id=IDENT LPAR args RPAR { NewCstr (id, $4) }
@@ -138,12 +139,12 @@ args:
 
 uop:
 | NEG { Not }
-| OPP { Opp }
+| MINUS { Opp }
 ;
 
 bop:
 | PLUS { Add }
-| SUB { Sub }
+| MINUS { Sub }
 | MUL { Mul}
 | DIV { Div }
 | MOD { Rem } 
