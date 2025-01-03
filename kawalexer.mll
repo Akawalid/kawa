@@ -74,10 +74,7 @@ rule token = parse
   | "//" [^ '\n']* "\n"  { new_line lexbuf; token lexbuf }
   | "/*"                 { comment lexbuf; token lexbuf }
 
-  | number as n  { 
-      if n.[0] = '-' then OPP INT(-int_of_string n) 
-      else INT(int_of_string n)
-    }
+  | number as n  { INT(int_of_string n) }
 
   | ident as id  { keyword_or_ident id }
 
