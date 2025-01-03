@@ -9,11 +9,17 @@
 %token <string> IDENT
 %token MAIN
 %token LPAR RPAR BEGIN END SEMI COMMA DOT
-%token SUB PLUS MUL DIV // modulo à rajouter
+%token SUB PLUS MUL DIV MOD
 %token NEG EQUAL NEQ LT LE GT GE AND OR TRUE FALSE
-%token ASSIGN PRINT VAR ATTRIBUTE METHOD CLASS NEW THIS IF ELSE
+%token ASSIGN PRINT VAR ATTRIBUTE METHOD CLASS EXTENDS NEW THIS IF ELSE
 %token WHILE RETURN TINT TBOOL TVOID
 %token EOF
+
+// %left PLUS MINUS
+// %left TIMES DIV
+// %right POW
+// %nonassoc LT GT
+
 
 %start program
 %type <Kawa.program> program
@@ -21,36 +27,55 @@
 %%
 
 program:
-| glbs=var_decl classes=class_def MAIN BEGIN main=seq_instr END EOF
-    { {classes=classes; globals=glbs; main} }
+| globals=list(var_decl) classes=list(class_def) MAIN BEGIN main=list(instruction) END EOF
+    { {classes; globals; main} }
 ;
 
 class_def:
-| CLASS id=IDENT BEGIN atts=attr_decl mths=method_def END cd=class_def { {class_name=id; 
-                                                                          attributes=atts; 
-                                                                          methods=mths; 
-                                                                          parent=None }::cd  }
-|                                                                      { [] }
+| CLASS id=IDENT pr=parent BEGIN 
+    atts=list(att_decl)
+    meths=list(method_def)
+  END SEMI
+  {
+    {
+      class_name = id;
+      attributes = atts;
+      methods = meths;
+      parent = pr;
+    }
+  }
+;
 
+parent:
+| { None }
+|  EXTENDS id=IDENT { Some id }
+;
 
-var_decl:
-| VAR t=types id=IDENT SEMI vd=var_decl  { (id,t)::vd }   
-|                                        { [] }
-
-attr_decl:
-| ATTRIBUTE t=types id=IDENT SEMI ad=attr_decl  { (id,t)::ad }   
-|                                               { [] }
+att_decl:
+|  ATTRIBUTE tho=typ id=IDENT SEMI { id, tho }
+;
 
 method_def:
-| METHOD t=types id=IDENT LPAR ps=params RPAR 
-                          BEGIN vd=var_decl s=seq_instr END mths=method_def {{
-                                                                method_name= id;
-                                                                code= s;
-                                                                params= ps;
-                                                                locals= vd;
-                                                                return= t;
-                                                              }::mths }
-|                                                             { [] }
+| METHOD tho=typ id=IDENT LPAR params=params RPAR BEGIN
+  locals=list(var_decl)
+  code=list(instruction)
+ END SEMI
+ {
+  {
+    method_name = id;
+    code = code;
+    params = params;
+    locals = locals;
+    return = tho;
+  }
+ }
+;
+
+var_decl:
+| VAR tho=typ id=IDENT SEMI
+  {id, tho}
+
+;
 
 params:
 | t=types id=IDENT COMMA p=params { (id,t)::p }
@@ -77,6 +102,7 @@ instruction:
 seq_instr:
 |i=instruction s=seq_instr  { i::s }
 |                           { [] }
+
 mem:  
 |id=IDENT                   { Var(id) }
 |e=expression DOT id=IDENT  { Field(e, id) }
@@ -92,4 +118,35 @@ expression:
 seq_expr:
 | e=expression COMMA se=seq_expr { e::se }
 | e=expression                   { [e] }
+;
+
+args_nempty:
+| expression { [$1] }
+| args_nempty COMMA expression { $3::$1 }
+; 
+
+args:
+| { [] }
+| args_nempty { $1 }
+;
+
+uop:
+| NEG { Not }
+| SUB { Opp }
+;
+
+bop:
+| PLUS { Add }
+| SUB { Sub }
+| MUL { Mul}
+| DIV { Div }
+| MOD { Rem } 
+| LT { Lt } 
+| LE { Le }
+| GT { Gt }
+| GE { Ge }
+| EQUAL { Eq }
+| NEQ { Neq }
+| AND { And }
+| OR {Or}
 ;
