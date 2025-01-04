@@ -25,14 +25,15 @@ let get_class (l: class_def list) (class_name:string): class_def =
   with 
     |Not_found -> error "définition de classes non présente dans l'environement"
 
+(* Vérifie que la liste des expressions el s'évalue de manière compatible avec le type demandé des parametres*)
 let for_all_params (el:expr list) (params_types: (string * typ) list) (type_expr:expr -> typ Env.t -> typ) (tenv:typ Env.t) : unit = 
   (* les tvoid c'est juste pour intialiser *)
   let t_exepec = ref TVoid in
   let t_act = ref TVoid in
   if not( List.for_all2 (fun e (_,t) ->
       let t' = type_expr e tenv in
-      t_act := t;
-      t_exepec := t';
+      t_act := t';
+      t_exepec := t;
       t' = t
     ) el params_types ) then type_error !t_act !t_exepec
 
@@ -51,9 +52,9 @@ let typecheck_prog p =
     | Int _  -> TInt
     | Get mem_acc -> type_mem_access mem_acc tenv
     | This -> !obj_courant
-    | New s -> 
+    | New cn -> 
       (try
-        Env.find s tenv
+        Env.find cn tenv
       with
         |Not_found -> error "Classe inexistante"
       )

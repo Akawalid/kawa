@@ -52,11 +52,11 @@ parent:
 ;
 
 att_decl:
-|  ATTRIBUTE tho=typ id=IDENT SEMI { id, tho }
+|  ATTRIBUTE tho=types id=IDENT SEMI { id, tho }
 ;
 
 method_def:
-| METHOD tho=typ id=IDENT LPAR params=params RPAR BEGIN
+| METHOD tho=types id=IDENT LPAR params=params RPAR BEGIN
   locals=list(var_decl)
   code=list(instruction)
  END SEMI
@@ -72,7 +72,7 @@ method_def:
 ;
 
 var_decl:
-| VAR tho=typ id=IDENT SEMI
+| VAR tho=types id=IDENT SEMI
   {id, tho}
 
 ;
