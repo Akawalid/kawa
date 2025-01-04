@@ -55,7 +55,7 @@ let typecheck_prog p =
         (match (!obj_courant) with 
         TClass "this" -> error "Utilisation de this hors classe"
         |_ -> !obj_courant)
-    |New cn -> 
+    | New cn -> 
       (try
         Env.find cn tenv
       with
