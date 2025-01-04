@@ -16,12 +16,14 @@
 %token EOF
 
 
+
+%left OR
+%left AND
 %left EQUAL NEQ LT LE GT GE
-%left AND OR PLUS MINUS
-%left MUL DIV
-%left MOD
-%nonassoc OPP (*Inclus NEG, cette priorité est appliquée directement à la regle uop expression*)
-%right DOT
+%left PLUS MINUS
+%left MUL DIV MOD
+%nonassoc OPP (* Unary minus or NEG should come here *)
+%left DOT
 
 %start program
 %type <Kawa.program> program
