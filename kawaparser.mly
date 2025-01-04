@@ -145,7 +145,7 @@ uop:
 | MINUS { Opp }
 ;
 
-bop:
+%inline bop: (*%inline est trouvé dans la documentation page 17, il sert à linéariser bop, cela sert à bien définir les priorité dans la dérivation expression bop expression*)
 | PLUS { Add }
 | MINUS { Sub }
 | MUL { Mul}
