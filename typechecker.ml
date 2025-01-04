@@ -51,8 +51,11 @@ let typecheck_prog p =
   and type_expr e tenv = match e with
     | Int _  -> TInt
     | Get mem_acc -> type_mem_access mem_acc tenv
-    | This -> !obj_courant
-    | New cn -> 
+    | This ->
+        (match (!obj_courant) with 
+        TClass "this" -> error "Utilisation de this hors classe"
+        |_ -> !obj_courant)
+    |New cn -> 
       (try
         Env.find cn tenv
       with
@@ -69,8 +72,10 @@ let typecheck_prog p =
                       error "Pas de constructeur (ou pas déclaré en premier)")
                   |[] -> error "Il faut au moins le constructeur "
                   ) in
-      for_all_params el (meth.params) type_expr tenv;
-      TClass s
+      if(meth.return <> TVoid) then error "Le constructeur doit avoir void comme type de retour"
+      else
+        for_all_params el (meth.params) type_expr tenv;
+        TClass s
     
     | MethCall(e,s,el) ->
       (match(type_expr e tenv) with
@@ -169,4 +174,10 @@ let typecheck_prog p =
 
   let tenv = add_class_env p.classes tenv in
   List.iter (fun c_def -> check_class c_def tenv) p.classes;
+  (* Là on parcouru toutes les classes donc si après on trouve une utilisation
+  de this il faut lever une erreur 
+  
+  - Le flag pour savoir si on utilise un this en dehors d'une classe c'est 
+  la valeur de TClasse soit this *)
+  obj_courant := (TClass "this");
   check_seq p.main TVoid tenv

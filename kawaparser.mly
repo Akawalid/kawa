@@ -35,7 +35,7 @@ class_def:
 | CLASS id=IDENT pr=parent BEGIN 
     atts=list(att_decl)
     meths=list(method_def)
-  END SEMI
+  END 
   {
     {
       class_name = id;

@@ -27,20 +27,17 @@ let exec_prog (p: program): unit =
     let lenv = Hashtbl.create 16 in
     (*ajout des parametre dans l'espace locale*)
     List.iter2 (fun (par, _) v  -> Hashtbl.add lenv par v) meth.params args;
-    (*ajout des attributs dans l'espace locale*)
-    Hashtbl.iter (fun s v  -> Hashtbl.add lenv s v) this.fields;
+    (*ajout des vars locals dans *)
+    List.iter (fun (par, _) -> Hashtbl.add lenv par Null) meth.locals;
 
     exec_seq meth.code lenv;
 
-    (if (f="constructor") then 
+    (*(if (f="constructor") then 
         (* on garde que les attributs avec leurs valeurs initlisés*)
         Hashtbl.iter (fun s v -> 
           if(Hashtbl.mem this.fields s) then Hashtbl.replace this.fields s v
-          ) lenv)
+          ) lenv)*)
 
-      
-
-  
   and exec_seq s lenv =
     (let rec evali e = match eval e with
       | VInt n -> n
@@ -54,6 +51,19 @@ let exec_prog (p: program): unit =
         
     and eval (e: expr): value = match e with
       | Int n  -> VInt n
+      | Get (mem_acc) -> 
+        (match mem_acc with 
+          Var id -> 
+            (try 
+              Hashtbl.find lenv id
+            with
+              |Not_found -> Hashtbl.find env id
+            )
+          |Field(eo,att) -> 
+            let obj = evalo eo in
+            Hashtbl.find obj.fields att
+            
+        )
       | This -> VObj !obj_courant
       | New cn -> 
         let c = List.find (fun class_d -> class_d.class_name = cn) p.classes in
@@ -70,12 +80,13 @@ let exec_prog (p: program): unit =
         VObj ({cls=c.class_name; fields=fields})
         
       | MethCall (e, s, el) -> 
-        try 
+        (try 
           eval_call s (evalo e) (List.map (fun e -> eval e) el);
           Null
         with 
-          |Return v -> v
+          |Return v -> v)
       | _ -> failwith "case not implemented in eval"
+    
     in
   
     let rec exec (i: instr): unit = match i with
