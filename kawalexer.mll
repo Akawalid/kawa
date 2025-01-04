@@ -26,7 +26,7 @@
         "void",TVOID
       ] ;
     fun s ->
-      try  Hashtbl.find h s
+      try Hashtbl.find h s
       with Not_found -> IDENT(s)
         
 }
@@ -44,6 +44,7 @@ rule token = parse
   | "/*"                 { comment lexbuf; token lexbuf }
 
   | number as n  { INT(int_of_string n) }
+
   | ident as id  { keyword_or_ident id }
 
   | ";"   { SEMI }

@@ -9,17 +9,22 @@
 %token <string> IDENT
 %token MAIN
 %token LPAR RPAR BEGIN END SEMI COMMA DOT
-%token SUB PLUS MUL DIV MOD
+%token MINUS PLUS MUL DIV MOD
 %token NEG EQUAL NEQ LT LE GT GE AND OR TRUE FALSE
 %token ASSIGN PRINT VAR ATTRIBUTE METHOD CLASS EXTENDS NEW THIS IF ELSE
 %token WHILE RETURN TINT TBOOL TVOID
 %token EOF
 
-// %left PLUS MINUS
-// %left TIMES DIV
-// %right POW
-// %nonassoc LT GT
 
+
+%left OR
+%left AND
+%left EQUAL NEQ
+%nonassoc LT LE GT GE
+%left PLUS MINUS
+%left MUL DIV MOD
+%nonassoc OPP (* Unary minus or NEG should come here *)
+%left DOT
 
 %start program
 %type <Kawa.program> program
@@ -123,12 +128,12 @@ seq_expr:
 
 uop:
 | NEG { Not }
-| SUB { Opp }
+| MINUS { Opp }
 ;
 
 bop:
 | PLUS { Add }
-| SUB { Sub }
+| MINUS { Sub }
 | MUL { Mul}
 | DIV { Div }
 | MOD { Rem } 
