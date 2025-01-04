@@ -59,7 +59,7 @@ method_def:
 | METHOD tho=types id=IDENT LPAR params=params RPAR BEGIN
   locals=list(var_decl)
   code=list(instruction)
- END SEMI
+ END 
  {
   {
     method_name = id;
@@ -117,17 +117,8 @@ expression:
 
 seq_expr:
 | e=expression COMMA se=seq_expr { e::se }
-| e=expression                   { [e] }
-;
-
-args_nempty:
-| expression { [$1] }
-| args_nempty COMMA expression { $3::$1 }
-; 
-
-args:
-| { [] }
-| args_nempty { $1 }
+| e=expression                   { [e]   }
+|                                { []    }
 ;
 
 uop:

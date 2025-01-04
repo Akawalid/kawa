@@ -111,7 +111,6 @@ let typecheck_prog p =
       
         |_ -> error "Accès attribut pour type qui n'est pas un objet de classe"
       )
-    | _ -> failwith "case not implemented in type_mem_access"
   in
 
   let rec check_instr i ret tenv = match i with
@@ -137,7 +136,7 @@ let typecheck_prog p =
     | While(e, s) -> 
       check e TBool tenv;
       check_seq s ret  tenv
-    | _ -> failwith "case not implemented in check_instr"
+      
   and check_seq s ret tenv =
     List.iter (fun i -> check_instr i ret tenv) s
   in

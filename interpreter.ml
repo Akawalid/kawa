@@ -122,7 +122,6 @@ let exec_prog (p: program): unit =
           ve := evalb e;
         done;
 
-      | _ -> failwith "case not implemented in exec"
     and exec_seq s = 
       List.iter exec s
     in
