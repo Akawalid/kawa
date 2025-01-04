@@ -19,7 +19,8 @@
 
 %left OR
 %left AND
-%left EQUAL NEQ LT LE GT GE
+%left EQUAL NEQ
+%nonassoc LT LE GT GE
 %left PLUS MINUS
 %left MUL DIV MOD
 %nonassoc OPP (* Unary minus or NEG should come here *)
