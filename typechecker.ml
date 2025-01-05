@@ -15,15 +15,6 @@ let add_env l tenv =
 let typecheck_prog p =
   let tenv = add_env p.globals Env.empty in
   (* pour garder dans this la classe de l'objet courant*)
-  let class_courante = ref None in
-
-  let add_class_env l env = 
-    List.fold_left (fun env class_def -> 
-      if(Env.mem class_def.class_name env) then error "Deux classes avec le même nom"
-      else
-        Env.add class_def.class_name (TClass class_def.class_name) env
-      ) env l
-  in
   (**)
   let get_class (l: class_def list) (class_name:string): class_def = 
     try List.find (fun class_d -> class_d.class_name = class_name) l
@@ -76,18 +67,18 @@ let typecheck_prog p =
     | Bool _ -> TBool
     | Unop (Opp, e) -> check e TInt tenv; TInt
     | Unop (Not, e) -> check e TBool tenv; TBool
-    | Binop (Add, e1, e2) -> check e1 TInt tenv ; check e2 TInt tenv; TInt
+    | Binop (And, e1, e2) | Binop (Or, e1, e2) -> check e1 TBool tenv; check e2 TBool tenv; TBool
+    | Binop (Add, e1, e2) | Binop (Mul, e1, e2) |Binop (Div, e1, e2) |Binop (Rem, e1, e2) |Binop (Sub, e1, e2) -> check e1 TInt tenv ; check e2 TInt tenv; TInt
     | Binop (Eq, e1, e2) |  Binop (Neq, e1, e2) -> 
       let tho1 = type_expr e1 tenv in
       let tho2 = type_expr e2 tenv in
       if tho1 = tho2  then TBool
-      else type_error tho2 tho1     
+      else type_error tho2 tho1
     | Binop(_, e1, e2) -> check e1 TInt tenv ; check e2 TInt tenv; TInt
     | Get mem_acc -> type_mem_access mem_acc tenv
     | This ->
-        (match (!class_courante) with 
-        None -> error "'this' keyword is used outside a class definition."
-        | Some c -> TClass c)
+      (try  Env.find "this" tenv  
+      with Not_found -> error "'this' keyword is used outside a class definition.")
     | New cn -> type_constructor cn None
     | NewCstr (s, el) -> type_constructor s (Some el)
     
@@ -183,8 +174,7 @@ let typecheck_prog p =
 
   let rec check_class o tenv = 
     (* les attributs doivent être visibles pour les méthodes*)
-    class_courante :=  Some o.class_name;
-    let environement = ref Env.empty in
+    let environement = ref (Env.add "this" (TClass o.class_name) Env.empty) in
     let app o = 
       environement := add_env  o.attributes (!environement);
       None
@@ -192,7 +182,6 @@ let typecheck_prog p =
     let _ = ascendent_fold app o in
     let tenv = !environement in
     List.iter (fun m -> check_mdef m tenv ) o.methods;
-    class_courante := None (*Sortie d'une classe*)
     
   and check_mdef m tenv =
     let tenv = add_env m.params (add_env m.locals tenv) in

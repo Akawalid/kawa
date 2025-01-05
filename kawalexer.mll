@@ -15,6 +15,7 @@
         "attribute", ATTRIBUTE;
         "method", METHOD;
         "class",CLASS;
+        "extends", EXTENDS;
         "new",NEW;
         "this",THIS;
         "if",IF;

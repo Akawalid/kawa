@@ -51,18 +51,85 @@ let exec_prog (p: program): unit =
         
     and eval (e: expr): value = match e with
       | Int n  -> VInt n
+      | Bool b -> VBool b
+      | Unop (Opp, e) -> 
+        (match eval e with 
+          VInt v -> VInt(-v)
+          | _ -> failwith "Typechecker problem"
+        )
+      | Unop (Not, e) ->         
+        (match eval e with 
+          VBool v -> VBool(not v)
+          | _ -> failwith "Typechecker problem"
+        )
+      | Binop (Add, e1, e2) -> 
+        (match eval e1, eval e2 with 
+          VInt v1, VInt v2 -> VInt(v1 + v2)
+          | _ -> failwith "Typechecker problem"
+        )
+      | Binop (Sub, e1, e2) -> 
+        (match eval e1, eval e2 with 
+          VInt v1, VInt v2 -> VInt(v1 - v2)
+          | _ -> failwith "Typechecker problem"
+        )
+      | Binop (Mul, e1, e2) -> 
+        (match eval e1, eval e2 with 
+          VInt v1, VInt v2 -> VInt(v1 * v2)
+          | _ -> failwith "Typechecker problem"
+        )
+      | Binop (Div, e1, e2) -> 
+        (match eval e1, eval e2 with 
+          VInt v1, VInt v2 -> VInt(v1 / v2)
+          | _ -> failwith "Typechecker problem"
+        )
+      | Binop (Rem, e1, e2) -> 
+        (match eval e1, eval e2 with 
+          VInt v1, VInt v2 -> VInt(v1 mod v2)
+          | _ -> failwith "Typechecker problem"
+        )
+      | Binop (Eq, e1, e2) -> VBool (eval e1 = eval e2)  
+      | Binop (Neq, e1, e2) -> VBool (eval e1 <> eval e2)  
+      | Binop(Lt, e1, e2) -> 
+        (match eval e1, eval e2 with 
+        VInt v1, VInt v2 -> VBool(v1 < v2)
+        | _ -> failwith "Typechecker problem"
+        )
+      | Binop(Le, e1, e2) -> 
+        (match eval e1, eval e2 with 
+        VInt v1, VInt v2 -> VBool(v1 <= v2)
+        | _ -> failwith "Typechecker problem"
+        )
+      | Binop(Gt, e1, e2) ->
+        (match eval e1, eval e2 with 
+        VInt v1, VInt v2 -> VBool(v1 > v2)
+        | _ -> failwith "Typechecker problem"
+        ) 
+      | Binop(Ge, e1, e2) ->
+        (match eval e1, eval e2 with 
+        VInt v1, VInt v2 -> VBool(v1 >= v2)
+        | _ -> failwith "Typechecker problem"
+        )
+      | Binop(And, e1, e2) -> 
+        (match eval e1, eval e2 with 
+        VBool v1, VBool v2 -> VBool(v1 && v2)
+        | _ -> failwith "Typechecker problem"
+        )
+      | Binop(Or, e1, e2) -> 
+        (match eval e1, eval e2 with 
+        VBool v1, VBool v2 -> VBool(v1 || v2)
+        | _ -> failwith "Typechecker problem"
+        )
       | Get (mem_acc) -> 
-        (match mem_acc with 
+        (
+          match mem_acc with 
           Var id -> 
-            (try 
-              Hashtbl.find lenv id
-            with
-              |Not_found -> Hashtbl.find env id
+            (
+              try Hashtbl.find lenv id
+              with Not_found -> Hashtbl.find env id
             )
-          |Field(eo,att) -> 
+          | Field(eo, att) -> 
             let obj = evalo eo in
-            Hashtbl.find obj.fields att
-            
+            Hashtbl.find obj.fields att  
         )
       | This -> VObj !obj_courant
       | New cn -> 
@@ -74,7 +141,7 @@ let exec_prog (p: program): unit =
       | NewCstr (cn, el) -> 
         let c = List.find (fun class_d -> class_d.class_name = cn) p.classes in
         let fields = Hashtbl.create 16 in
-        List.iter (fun (att,_) -> Hashtbl.add fields att Null) c.attributes;
+        List.iter (fun (att, _) -> Hashtbl.add fields att Null) c.attributes;
 
         eval_call "constructor" {cls=c.class_name; fields=fields} (List.map (fun e -> eval e) el);
         VObj ({cls=c.class_name; fields=fields})
@@ -85,7 +152,6 @@ let exec_prog (p: program): unit =
           Null
         with 
           |Return v -> v)
-      | _ -> failwith "case not implemented in eval"
     
     in
   
@@ -109,10 +175,8 @@ let exec_prog (p: program): unit =
             Hashtbl.replace obj.fields s (eval e) 
         )
       | If(e, s1, s2) -> 
-        if(evalb e) then 
-          exec_seq s1
-        else
-          exec_seq s2
+        if(evalb e) then exec_seq s1
+        else exec_seq s2
 
       | While(e, s) -> 
         let ve = ref (evalb e) in
