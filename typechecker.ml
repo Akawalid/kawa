@@ -15,7 +15,7 @@ let add_env l tenv =
 let typecheck_prog p =
   let tenv = add_env p.globals Env.empty in
   (* pour garder dans this la classe de l'objet courant*)
-  let obj_courant = ref (TClass "this") in
+  let class_courante = ref None in
 
   let add_class_env l env = 
     List.fold_left (fun env class_def -> 
@@ -30,17 +30,14 @@ let typecheck_prog p =
     with Not_found -> error ("Missing declaration of the class " ^ class_name) 
   in
   
-  let rec ascendent_fold application cls = 
-    let res = application cls in
+  let rec ascendent_fold application o =
+    let res = application o in
     if res <> None then res
     else 
-     let o =  get_class p.classes cls in
-      (
       match o.parent with 
-       None -> application cls
-      | Some c -> ascendent_fold application c
-      )
-  in
+       None -> application o
+      | Some c -> ascendent_fold application (get_class p.classes c)
+    in
 (* 
   let rec subtype tho' tho =
     if tho' = tho then true
@@ -60,11 +57,11 @@ let typecheck_prog p =
     TClass tho' ->  
         (
         ascendent_fold (
-        fun tho_a ->  
-          if TClass tho_a = tho then Some true
-          else None
+          fun o ->  
+            if TClass o.class_name = tho then Some true
+            else None
         )
-        tho'
+        (get_class p.classes tho')
         )
         <> None 
     | _-> tho' = tho (*si tho ou tho' sont des types de base*)
@@ -88,18 +85,18 @@ let typecheck_prog p =
     | Binop(_, e1, e2) -> check e1 TInt tenv ; check e2 TInt tenv; TInt
     | Get mem_acc -> type_mem_access mem_acc tenv
     | This ->
-        (match (!obj_courant) with 
-        TClass "this" -> error "Utilisation de this hors classe"
-        |_ -> !obj_courant)
+        (match (!class_courante) with 
+        None -> error "'this' keyword is used outside a class definition."
+        | Some c -> TClass c)
     | New cn -> type_constructor cn None
     | NewCstr (s, el) -> type_constructor s (Some el)
     
     | MethCall(e, s, el) ->
       match(type_expr e tenv) with
-        | TClass c -> type_method s el c
+        | TClass c -> type_method s el (get_class p.classes c)
         | tho -> error ("Incompatible object type " ^ (typ_to_string tho))
 
-    and type_method s el c =
+    and type_method s el o =
       let rec loop el ltypes = 
         match el, ltypes with 
         [], [] -> ()
@@ -109,29 +106,29 @@ let typecheck_prog p =
           ; loop el ltypes
         | _ -> error ("No method " ^ s ^ " found.")
       in
-      let app tho =
-        let methods =  (get_class p.classes tho).methods in
+      let app o =
+        let methods =  o.methods in
         try
           let o = List.find (fun obj -> obj.method_name = s) methods in
           loop el o.params; 
           Some o.return
         with Not_found -> None
       in
-      match (ascendent_fold app c) with 
+      match (ascendent_fold app o) with 
       Some v -> v
       | None ->  error ("Missing declaration of the method " ^ s)
   
     and type_constructor s le =
-      let app tho = 
+      let app o = 
         match le with 
         None -> Some (TClass s)
       | Some le ->  
-        try let tho = type_method "constructor" le tho in
+        try let tho = type_method "constructor" le o in
           if TVoid <> tho then error (s ^ "(constructor expected to be of type" ^ (typ_to_string TVoid) ^ " but found, " ^(typ_to_string tho))
           else Some (TClass s)
         with Error e -> None
       in
-      match (ascendent_fold app s) with 
+      match (ascendent_fold app (get_class p.classes s)) with 
       Some v -> v
       | None ->  error ("Missing declaration of the method " ^ s) 
   
@@ -144,15 +141,14 @@ let typecheck_prog p =
     | Field(e, s) ->       
       match type_expr e tenv with 
         TClass c -> 
-          let app tho = 
+          let app o = 
           try 
-            let o = List.find (fun o -> o.class_name = tho) p.classes in
             let _, tho = List.find (fun (s', tho) -> s' = s) o.attributes in
             Some tho  
           with Not_found -> None
           in
           (
-            match ascendent_fold app c with 
+            match ascendent_fold app (get_class p.classes c) with 
               None -> error (c ^ " has no attribute name: " ^ s)
               | Some v -> v
           )
@@ -163,10 +159,10 @@ let typecheck_prog p =
     | Print e -> check e TInt tenv
     | Expr(e) -> check e TVoid tenv
     | Return(e) -> 
-      if (ret = TVoid) then error "Pas de return pour un retour de type void"
+      if (ret = TVoid) then error "'Return' keyword not expected for void type."
       else
       let t = type_expr e tenv in
-      if t <> ret then type_error t ret
+      if not (subtype t ret) then type_error t ret
 
     | Set(mem_acc, e) ->
       let te = type_expr e tenv in 
@@ -185,20 +181,23 @@ let typecheck_prog p =
     List.iter (fun i -> check_instr i ret tenv) s
   in
 
-  let rec check_class c tenv = 
+  let rec check_class o tenv = 
     (* les attributs doivent être visibles pour les méthodes*)
-    obj_courant := (TClass c.class_name);
-    let tenv = add_env c.attributes tenv in
-    List.iter (fun m -> check_mdef m tenv ) c.methods
+    class_courante :=  Some o.class_name;
+    let environement = ref Env.empty in
+    let app o = 
+      environement := add_env  o.attributes (!environement);
+      None
+    in
+    let _ = ascendent_fold app o in
+    let tenv = !environement in
+    List.iter (fun m -> check_mdef m tenv ) o.methods;
+    class_courante := None (*Sortie d'une classe*)
     
   and check_mdef m tenv =
-    let tenv = add_env m.params tenv in
-    let tenv = add_env m.locals tenv in
-
+    let tenv = add_env m.params (add_env m.locals tenv) in
     check_seq m.code m.return tenv;
-
-    if(m.return <> TVoid && not(return_seq m.code)) then error "Manque un Return"
-  
+    if(m.return <> TVoid && not(return_seq m.code)) then error ("Expected 'return' at the end of the method " ^ m.method_name)   
   
   (* pour les méthodes de type different de void on oblige le return *)
   and return_exist i = 
@@ -206,7 +205,7 @@ let typecheck_prog p =
       | Print _ -> false
       | Set _ -> false
       | If (_ , s1 , s2 ) -> return_seq s1 && return_seq s2
-      | While _ -> false
+      | While (_, s) ->  return_seq s
       | Return _ -> true
       | Expr _ -> false
   and return_seq seq = 
@@ -217,10 +216,4 @@ let typecheck_prog p =
 
   let tenv = add_class_env p.classes tenv in
   List.iter (fun c_def -> check_class c_def tenv) p.classes;
-  (* Là on parcouru toutes les classes donc si après on trouve une utilisation
-  de this il faut lever une erreur 
-  
-  - Le flag pour savoir si on utilise un this en dehors d'une classe c'est 
-  la valeur de TClasse soit this *)
-  obj_courant := (TClass "this");
   check_seq p.main TVoid tenv
