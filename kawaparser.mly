@@ -40,7 +40,7 @@ class_def:
 | CLASS id=IDENT pr=parent BEGIN 
     atts=list(att_decl)
     meths=list(method_def)
-  END SEMI
+  END 
   {
     {
       class_name = id;
@@ -64,7 +64,7 @@ method_def:
 | METHOD tho=typ id=IDENT LPAR params=params RPAR BEGIN
   locals=list(var_decl)
   code=list(instruction)
- END SEMI
+ END 
  {
   {
     method_name = id;
@@ -101,13 +101,13 @@ var_decl:
 instruction:
 | PRINT LPAR e=expression RPAR SEMI { Print (e) }
 | v=mem ASSIGN e=expression SEMI { Set (v, e) }
-| IF e=expression BEGIN
+| IF LPAR e=expression RPAR BEGIN
     lif=list(instruction)
   END ELSE BEGIN
     lelse=list(instruction)
   END
   { If (e, lif, lelse) }
-| WHILE e=expression BEGIN li=list(instruction) END { While (e, li) }
+| WHILE LPAR e=expression RPAR BEGIN li=list(instruction) END { While (e, li) }
 | RETURN e=expression SEMI { Return e } 
 | e=expression SEMI { Expr e }
 ;
