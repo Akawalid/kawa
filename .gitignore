@@ -4,6 +4,7 @@
 *.automaton
 *.conflicts
 *.mli
+kawaparser.ml
 
 .vscode
 _build
