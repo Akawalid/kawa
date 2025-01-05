@@ -40,7 +40,7 @@ class_def:
 | CLASS id=IDENT pr=parent BEGIN 
     atts=list(att_decl)
     meths=list(method_def)
-  END 
+  END SEMI
   {
     {
       class_name = id;
@@ -57,14 +57,14 @@ parent:
 ;
 
 att_decl:
-|  ATTRIBUTE tho=types id=IDENT SEMI { id, tho }
+|  ATTRIBUTE tho=typ id=IDENT SEMI { id, tho }
 ;
 
 method_def:
-| METHOD tho=types id=IDENT LPAR params=params RPAR BEGIN
+| METHOD tho=typ id=IDENT LPAR params=params RPAR BEGIN
   locals=list(var_decl)
   code=list(instruction)
- END 
+ END SEMI
  {
   {
     method_name = id;
@@ -76,54 +76,68 @@ method_def:
  }
 ;
 
-var_decl:
-| VAR tho=types id=IDENT SEMI
-  {id, tho}
-
+typ:
+| TBOOL { TBool }
+| TVOID { TVoid }
+| TINT { TInt }
+| id=IDENT { TClass(id) }
 ;
+
+params_nempty:
+| tho=typ id=IDENT {[id, tho]}
+| params=params COMMA tho=typ id=IDENT { (id, tho)::params }
+; 
 
 params:
-| t=types id=IDENT COMMA p=params { (id,t)::p }
-| t=types id=IDENT                { [(id,t)] }
-|                                 { [] }
-
-
-types:
-|TVOID                       { TVoid }
-|TINT                        { TInt }
-|TBOOL                       { TBool }
-|id=IDENT                    { TClass id }
-
-instruction:
-|PRINT LPAR e=expression RPAR SEMI                    { Print(e) }
-|mem_acc=mem ASSIGN e=expression SEMI                 { Set (mem_acc, e) }
-|IF LPAR e=expression RPAR BEGIN s1=seq_instr END 
-                      ELSE BEGIN s2=seq_instr END     { If(e, s1, s2) }
-|WHILE LPAR e=expression RPAR BEGIN s=seq_instr END   { While(e, s) }
-|RETURN e=expression SEMI                             { Return(e) }
-|e=expression SEMI                                    { Expr(e) }
+| { [] }
+| li = params_nempty { li }
 ;
 
-seq_instr:
-|i=instruction s=seq_instr  { i::s }
-|                           { [] }
+var_decl:
+| VAR tho=typ id=IDENT SEMI
+  {id, tho}
+;
 
-mem:  
-|id=IDENT                   { Var(id) }
-|e=expression DOT id=IDENT  { Field(e, id) }
+instruction:
+| PRINT LPAR e=expression RPAR SEMI { Print (e) }
+| v=mem ASSIGN e=expression SEMI { Set (v, e) }
+| IF e=expression BEGIN
+    lif=list(instruction)
+  END ELSE BEGIN
+    lelse=list(instruction)
+  END
+  { If (e, lif, lelse) }
+| WHILE e=expression BEGIN li=list(instruction) END { While (e, li) }
+| RETURN e=expression SEMI { Return e } 
+| e=expression SEMI { Expr e }
+;
+
+mem:
+| id=IDENT { Var(id) }
+| e=expression DOT id=IDENT { Field(e, id) }
 
 expression:
-| n=INT                                           { Int(n) }
-| m=mem                                           { Get(m) }
-| THIS                                            { This }
-| NEW id=IDENT                                    { New(id) }
-| NEW id=IDENT LPAR se=seq_expr RPAR              { NewCstr(id, se) }
-| e=expression DOT id=IDENT LPAR se=seq_expr RPAR { MethCall(e, id, se)}
+| n=INT { Int(n) }
+| FALSE { Bool false }
+| TRUE { Bool true }
+| THIS { This }
+| mem { Get $1 }
+| LPAR expression RPAR { $2 }
+| uop expression %prec OPP { Unop ($1, $2) }
+| expression bop expression { Binop ($2, $1, $3) }
+| NEW id=IDENT { New id }
+| NEW id=IDENT LPAR args RPAR { NewCstr (id, $4) }
+| expression DOT id=IDENT LPAR args RPAR { MethCall ($1, id, $5) }
+;
 
-seq_expr:
-| e=expression COMMA se=seq_expr { e::se }
-| e=expression                   { [e]   }
-|                                { []    }
+args_nempty:
+| expression { [$1] }
+| args_nempty COMMA expression { $3::$1 }
+; 
+
+args:
+| { [] }
+| args_nempty { $1 }
 ;
 
 uop:
