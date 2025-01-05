@@ -213,7 +213,6 @@ let typecheck_prog p =
         | [] -> false
         | i :: s -> return_exist i || return_seq s
   in
-
-  let tenv = add_class_env p.classes tenv in
+  
   List.iter (fun c_def -> check_class c_def tenv) p.classes;
   check_seq p.main TVoid tenv
