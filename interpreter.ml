@@ -16,21 +16,43 @@ exception Return of value
 let exec_prog (p: program): unit =
   let env = Hashtbl.create 16 in
   List.iter (fun (x, _) -> Hashtbl.add env x Null) p.globals;
-  (* pour garder dans this la classe de l'objet courant*)
-  let obj_courant = ref { cls = "MyClass"; fields = Hashtbl.create 0 } in
+
+  let get_class c = 
+    List.find (fun obj -> obj.class_name = c) p.classes
+  in
+  let rec ascendent_fold application o =
+    let res = application o in
+    if res <> None then res
+    else 
+      match o.parent with 
+       None -> application o
+      | Some c -> ascendent_fold application (get_class c)
+    in
   
   let rec eval_call f this args =
-    obj_courant := this;
-    let c = List.find (fun class_d -> class_d.class_name = this.cls) p.classes in
-    let meth = List.find (fun meth_d -> meth_d.method_name = f) c.methods in
-
+  
+    let o = List.find (fun class_d -> class_d.class_name = this.cls) p.classes in
+    let app o = 
+        try Some (List.find (fun meth_d -> meth_d.method_name = f) o.methods)
+        with Not_found -> None
+    in
+    let meth = match (ascendent_fold app o) with 
+    None-> failwith "Typechcker problem"
+    | Some v -> v
+    in
     let lenv = Hashtbl.create 16 in
+
+    (*On remplace la référence de l'objet this dans le programme*)
+    Hashtbl.replace lenv "this" (VObj this);
     (*ajout des parametres dans l'espace locale*)
     List.iter2 (fun (par, _) v  -> Hashtbl.add lenv par v) meth.params args;
     (*ajout des vars locals dans *)
     List.iter (fun (par, _) -> Hashtbl.add lenv par Null) meth.locals;
     exec_seq meth.code lenv;
 
+    (*Restauration des dernières valeurs pour le shadowing*)
+    List.iter2 (fun (par, _) v  -> Hashtbl.remove lenv par) meth.params args;
+    List.iter (fun (par, _) -> Hashtbl.remove lenv par) meth.locals;
 
   and exec_seq s lenv =
     (let rec evali e = match eval e with
@@ -58,95 +80,101 @@ let exec_prog (p: program): unit =
             let obj = evalo eo in
             Hashtbl.find obj.fields att  
         )
-      | This -> VObj !obj_courant
+      | This -> Hashtbl.find lenv "this"
       | New cn -> 
-        let c = List.find (fun class_d -> class_d.class_name = cn) p.classes in
+        let o = get_class cn in
         let fields = Hashtbl.create 16 in
-        List.iter (fun (att,_) -> Hashtbl.add fields att Null) c.attributes;
-        VObj ({cls=c.class_name; fields=fields})
+        let app o = 
+          List.iter (fun (att, _) -> Hashtbl.add fields att Null) o.attributes;
+          None
+        in
+        let _ = ascendent_fold app o in
+        VObj ({cls = o.class_name; fields = fields})
         
       | NewCstr (cn, el) -> 
-        let c = List.find (fun class_d -> class_d.class_name = cn) p.classes in
+        let o = get_class cn in
         let fields = Hashtbl.create 16 in
-        Printf.printf "%s " cn;
-        List.iter (fun (att, _) -> Printf.printf "%s" att; Hashtbl.add fields att Null) c.attributes;
-
-        eval_call "constructor" {cls=c.class_name; fields=fields} (List.map (fun e -> eval e) el);
-        VObj ({cls=c.class_name; fields=fields})
+        let app o = 
+          List.iter (fun (att, _) -> Hashtbl.add fields att Null) o.attributes;
+          None
+        in
+        let _ = ascendent_fold app o in
+        eval_call "constructor" {cls=o.class_name; fields=fields} (List.map (fun e -> eval e) el);
+        VObj ({cls=o.class_name; fields=fields})
         
       | MethCall (e, s, el) -> 
         (try 
-          eval_call s (evalo e)(List.map (fun e -> eval e) el);
+          eval_call s (evalo e) (List.map (fun e -> eval e) el);
           Null
         with Return v -> v)
         
-        | Unop (Opp, e) -> 
-          (match eval e with 
-            VInt v -> VInt(-v)
-            | _ -> failwith "Typechecker problem"
-          )
-        | Unop (Not, e) ->         
-          (match eval e with 
-            VBool v -> VBool(not v)
-            | _ -> failwith "Typechecker problem"
-          )
-        | Binop (Add, e1, e2) -> 
-          (match eval e1, eval e2 with 
-            VInt v1, VInt v2 -> VInt(v1 + v2)
-            | _ -> failwith "Typechecker problem"
-          )
-        | Binop (Sub, e1, e2) -> 
-          (match eval e1, eval e2 with 
-            VInt v1, VInt v2 -> VInt(v1 - v2)
-            | _ -> failwith "Typechecker problem"
-          )
-        | Binop (Mul, e1, e2) -> 
-          (match eval e1, eval e2 with 
-            VInt v1, VInt v2 -> VInt(v1 * v2)
-            | _ -> failwith "Typechecker problem"
-          )
-        | Binop (Div, e1, e2) -> 
-          (match eval e1, eval e2 with 
-            VInt v1, VInt v2 -> VInt(v1 / v2)
-            | _ -> failwith "Typechecker problem"
-          )
-        | Binop (Rem, e1, e2) -> 
-          (match eval e1, eval e2 with 
-            VInt v1, VInt v2 -> VInt(v1 mod v2)
-            | _ -> failwith "Typechecker problem"
-          )
-        | Binop (Eq, e1, e2) -> VBool (eval e1 = eval e2)  
-        | Binop (Neq, e1, e2) -> VBool (eval e1 <> eval e2)  
-        | Binop(Lt, e1, e2) -> 
-          (match eval e1, eval e2 with 
-          VInt v1, VInt v2 -> VBool(v1 < v2)
+      | Unop (Opp, e) -> 
+        (match eval e with 
+          VInt v -> VInt(-v)
           | _ -> failwith "Typechecker problem"
-          )
-        | Binop(Le, e1, e2) -> 
-          (match eval e1, eval e2 with 
-          VInt v1, VInt v2 -> VBool(v1 <= v2)
+        )
+      | Unop (Not, e) ->         
+        (match eval e with 
+          VBool v -> VBool(not v)
           | _ -> failwith "Typechecker problem"
-          )
-        | Binop(Gt, e1, e2) ->
-          (match eval e1, eval e2 with 
-          VInt v1, VInt v2 -> VBool(v1 > v2)
+        )
+      | Binop (Add, e1, e2) -> 
+        (match eval e1, eval e2 with 
+          VInt v1, VInt v2 -> VInt(v1 + v2)
           | _ -> failwith "Typechecker problem"
-          ) 
-        | Binop(Ge, e1, e2) ->
-          (match eval e1, eval e2 with 
-          VInt v1, VInt v2 -> VBool(v1 >= v2)
+        )
+      | Binop (Sub, e1, e2) -> 
+        (match eval e1, eval e2 with 
+          VInt v1, VInt v2 -> VInt(v1 - v2)
           | _ -> failwith "Typechecker problem"
-          )
-        | Binop(And, e1, e2) -> 
-          (match eval e1, eval e2 with 
-          VBool v1, VBool v2 -> VBool(v1 && v2)
+        )
+      | Binop (Mul, e1, e2) -> 
+        (match eval e1, eval e2 with 
+          VInt v1, VInt v2 -> VInt(v1 * v2)
           | _ -> failwith "Typechecker problem"
-          )
-        | Binop(Or, e1, e2) -> 
-          (match eval e1, eval e2 with 
-          VBool v1, VBool v2 -> VBool(v1 || v2)
+        )
+      | Binop (Div, e1, e2) -> 
+        (match eval e1, eval e2 with 
+          VInt v1, VInt v2 -> VInt(v1 / v2)
           | _ -> failwith "Typechecker problem"
-          )
+        )
+      | Binop (Rem, e1, e2) -> 
+        (match eval e1, eval e2 with 
+          VInt v1, VInt v2 -> VInt(v1 mod v2)
+          | _ -> failwith "Typechecker problem"
+        )
+      | Binop (Eq, e1, e2) -> VBool (eval e1 = eval e2)  
+      | Binop (Neq, e1, e2) -> VBool (eval e1 <> eval e2)  
+      | Binop(Lt, e1, e2) -> 
+        (match eval e1, eval e2 with 
+        VInt v1, VInt v2 -> VBool(v1 < v2)
+        | _ -> failwith "Typechecker problem"
+        )
+      | Binop(Le, e1, e2) -> 
+        (match eval e1, eval e2 with 
+        VInt v1, VInt v2 -> VBool(v1 <= v2)
+        | _ -> failwith "Typechecker problem"
+        )
+      | Binop(Gt, e1, e2) ->
+        (match eval e1, eval e2 with 
+        VInt v1, VInt v2 -> VBool(v1 > v2)
+        | _ -> failwith "Typechecker problem"
+        ) 
+      | Binop(Ge, e1, e2) ->
+        (match eval e1, eval e2 with 
+        VInt v1, VInt v2 -> VBool(v1 >= v2)
+        | _ -> failwith "Typechecker problem"
+        )
+      | Binop(And, e1, e2) -> 
+        (match eval e1, eval e2 with 
+        VBool v1, VBool v2 -> VBool(v1 && v2)
+        | _ -> failwith "Typechecker problem"
+        )
+      | Binop(Or, e1, e2) -> 
+        (match eval e1, eval e2 with 
+        VBool v1, VBool v2 -> VBool(v1 || v2)
+        | _ -> failwith "Typechecker problem"
+        )
     in
   
     let rec exec (i: instr): unit = match i with
@@ -164,7 +192,8 @@ let exec_prog (p: program): unit =
         (match mem_acc with 
           | Var s -> 
             if(Hashtbl.mem lenv s) then Hashtbl.replace lenv s ve
-            else Hashtbl.replace env s ve 
+            else if Hashtbl.mem env s then  Hashtbl.replace env s ve 
+            else failwith "Typechecker problem"
  
           | Field(eo, s) -> 
             (* à ce point pas besoin de vérifier que e d'évalue en objet*)

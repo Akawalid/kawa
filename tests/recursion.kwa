@@ -1,0 +1,21 @@
+var point a;
+var point b;
+
+class recursion {
+  attribute int x;
+  attribute int y;
+
+  method void print_inverse (int i) {
+    if (i > 0) {
+        this.print_inverse(i - 1);
+    } else {
+
+    }
+    print(i);
+  }
+}
+
+main {
+  a = new point;
+  a.print_inverse(10);
+}
