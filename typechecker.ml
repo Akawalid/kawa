@@ -9,8 +9,7 @@ let type_error ty_actual ty_expected =
 module Env = Map.Make(String)
 type tenv = typ Env.t
 
-let add_env l tenv =
-  List.fold_left (fun env (x, t) -> Env.add x t env) tenv l
+let add_env l tenv = List.fold_left (fun env (x, t) -> Env.add x t env) tenv l
 
 let typecheck_prog p =
   let tenv = add_env p.globals Env.empty in
@@ -74,20 +73,26 @@ let typecheck_prog p =
       let tho2 = type_expr e2 tenv in
       if tho1 = tho2  then TBool
       else type_error tho2 tho1
-    | Binop(_, e1, e2) -> check e1 TInt tenv ; check e2 TInt tenv; TInt
+    | Binop(_, e1, e2) -> check e1 TInt tenv ; check e2 TInt tenv; TBool
     | Get mem_acc -> type_mem_access mem_acc tenv
     | This ->
       (try  Env.find "this" tenv  
       with Not_found -> error "'this' keyword is used outside a class definition.")
-    | New cn -> type_constructor cn None
-    | NewCstr (s, el) -> type_constructor s (Some el)
+    | New cn -> type_constructor cn None tenv
+    | NewCstr (s, el) -> type_constructor s (Some el) tenv
     
     | MethCall(e, s, el) ->
       match(type_expr e tenv) with
-        | TClass c -> type_method s el (get_class p.classes c)
+        | TClass c -> type_method s el (get_class p.classes c) tenv
         | tho -> error ("Incompatible object type " ^ (typ_to_string tho))
 
-    and type_method s el o =
+    and type_method s el o tenv =
+      (*
+        s: method name
+        el: parameters list
+        o: class_def
+        return: method type if well defined
+      *)
       let rec loop el ltypes = 
         match el, ltypes with 
         [], [] -> ()
@@ -101,7 +106,7 @@ let typecheck_prog p =
         let methods =  o.methods in
         try
           let o = List.find (fun obj -> obj.method_name = s) methods in
-          loop el o.params; 
+          loop el o.params;
           Some o.return
         with Not_found -> None
       in
@@ -109,12 +114,12 @@ let typecheck_prog p =
       Some v -> v
       | None ->  error ("Missing declaration of the method " ^ s)
   
-    and type_constructor s le =
+    and type_constructor s le tenv =
       let app o = 
         match le with 
         None -> Some (TClass s)
       | Some le ->  
-        try let tho = type_method "constructor" le o in
+        try let tho = type_method "constructor" le o tenv in
           if TVoid <> tho then error (s ^ "(constructor expected to be of type" ^ (typ_to_string TVoid) ^ " but found, " ^(typ_to_string tho))
           else Some (TClass s)
         with Error e -> None
@@ -127,7 +132,7 @@ let typecheck_prog p =
     | Var s -> 
       (
       try Env.find s tenv
-      with Not_found -> error ("Missing declaration of the variabel " ^ s)
+      with Not_found -> error ("Missing declaration of the variable " ^ s)
       )
     | Field(e, s) ->       
       match type_expr e tenv with 
@@ -164,6 +169,9 @@ let typecheck_prog p =
       check e TBool tenv;
       check_seq s1 ret  tenv;
       check_seq s2 ret  tenv
+    | If2(e, s) -> 
+        check e TBool tenv;
+        check_seq s ret tenv;
     | While(e, s) -> 
       check e TBool tenv;
       check_seq s ret  tenv
@@ -174,7 +182,7 @@ let typecheck_prog p =
 
   let rec check_class o tenv = 
     (* les attributs doivent être visibles pour les méthodes*)
-    let environement = ref (Env.add "this" (TClass o.class_name) Env.empty) in
+    let environement = ref (Env.add "this" (TClass o.class_name) tenv) in
     let app o = 
       environement := add_env  o.attributes (!environement);
       None
@@ -194,6 +202,7 @@ let typecheck_prog p =
       | Print _ -> false
       | Set _ -> false
       | If (_ , s1 , s2 ) -> return_seq s1 && return_seq s2
+      | If2 (_ , s) -> false
       | While (_, s) ->  return_seq s
       | Return _ -> true
       | Expr _ -> false

@@ -204,6 +204,8 @@ let exec_prog (p: program): unit =
         if(evalb e) then exec_seq s1
         else exec_seq s2
 
+      | If2(e, s) -> if(evalb e) then exec_seq s
+        
       | While(e, s) -> 
         let ve = ref (evalb e) in
 

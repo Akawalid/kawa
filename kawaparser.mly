@@ -16,14 +16,13 @@
 %token EOF
 
 
-
 %left OR
 %left AND
 %left EQUAL NEQ
-%nonassoc LT LE GT GE
+%left LT LE GT GE
 %left PLUS MINUS
 %left MUL DIV MOD
-%nonassoc OPP
+%right OPP NEG
 %left DOT
 
 %start program
@@ -107,6 +106,10 @@ instruction:
     lelse=list(instruction)
   END
   { If (e, lif, lelse) }
+| IF LPAR e=expression RPAR BEGIN
+    lif=list(instruction)
+  END
+  { If2 (e, lif) }
 | WHILE LPAR e=expression RPAR BEGIN li=list(instruction) END { While (e, li) }
 | RETURN e=expression SEMI { Return e } 
 | e=expression SEMI { Expr e }
@@ -123,7 +126,8 @@ expression:
 | THIS { This }
 | mem { Get $1 }
 | LPAR expression RPAR { $2 }
-| uop expression %prec OPP { Unop ($1, $2) }
+| MINUS expression %prec OPP { Unop (Not, $2) }
+| NEG expression { Unop (Opp, $2) }
 | expression bop expression { Binop ($2, $1, $3) }
 | NEW id=IDENT { New id }
 | NEW id=IDENT LPAR args RPAR { NewCstr (id, $4) }
@@ -138,11 +142,6 @@ args_nempty:
 args:
 | { [] }
 | args_nempty { $1 }
-;
-
-uop:
-| NEG { Not }
-| MINUS { Opp }
 ;
 
 %inline bop: (*%inline est trouvé dans la documentation page 17, il sert à linéariser bop, cela sert à bien définir les priorité dans la dérivation expression bop expression*)

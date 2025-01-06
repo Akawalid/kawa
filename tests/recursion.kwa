@@ -1,21 +1,18 @@
-var point a;
-var point b;
+var recursion a;
 
 class recursion {
-  attribute int x;
-  attribute int y;
 
-  method void print_inverse (int i) {
-    if (i > 0) {
-        this.print_inverse(i - 1);
-    } else {
-
+  method int fibo(int i) {
+    
+    if (i < 2) {
+        return i;
     }
-    print(i);
+
+    return this.fibo(i-1) + this.fibo(i-2);
   }
 }
 
 main {
-  a = new point;
-  a.print_inverse(10);
+  a = new recursion;
+  print(a.fibo(5));
 }
