@@ -163,7 +163,6 @@ let exec_prog (p: program): unit =
           Null
           with Return v -> v
         )
-        
       | MethCall (e, s, el) -> 
         (try 
           eval_call s (evalo e) (List.map (fun e -> eval e) el);
@@ -238,6 +237,19 @@ let exec_prog (p: program): unit =
         VBool v1, VBool v2 -> VBool(v1 || v2)
         | _ -> failwith "Typechecker problem"
         )
+      | Binop(Instanceof, e, Get (Var c)) -> 
+        let obj = evalo e in
+        (*Verify if the class associated to obj, is a subclass of c*)
+        let app o = 
+          if o.class_name = c then Some true
+          else None
+        in
+
+        (match ascendent_fold app (get_class obj.cls) with 
+          None -> VBool false
+          | _ -> VBool true
+        )
+      | Binop(Instanceof, _, _) -> failwith "Typechecker problem"
     in
   
     let rec exec (i: instr): unit = match i with
@@ -258,7 +270,6 @@ let exec_prog (p: program): unit =
             else if Hashtbl.mem env s then  Hashtbl.replace env s ve 
             else failwith "Typechecker problem"
           | Field (Get (Var c), s) when List.exists (fun c_def -> c_def.class_name = c) p.classes ->
-              (* (get_class p.classes c) *)
               Hashtbl.replace (Hashtbl.find class_env c) s (eval e);
           | Field(eo, s) -> 
             (* à ce point pas besoin de vérifier que e d'évalue en objet*)

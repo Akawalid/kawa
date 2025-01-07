@@ -10,7 +10,7 @@
 %token MAIN
 %token LPAR RPAR BEGIN END SEMI COMMA DOT
 %token MINUS PLUS MUL DIV MOD
-%token NEG EQUAL NEQ LT LE GT GE AND OR TRUE FALSE
+%token NEG EQUAL NEQ LT LE GT GE AND OR TRUE FALSE INSTANCEOF
 %token VAR STATIC PROTECTED PRIVATE METHOD ATTRIBUTE CLASS EXTENDS
 %token ASSIGN PRINT NEW THIS IF ELSE
 %token WHILE RETURN TINT TBOOL TVOID
@@ -19,7 +19,7 @@
 %left OR
 %left AND
 %left EQUAL NEQ
-%left LT LE GT GE
+%left LT LE GT GE INSTANCEOF
 %left PLUS MINUS
 %left MUL DIV MOD
 %right OPP NEG
@@ -160,8 +160,8 @@ expression:
 | THIS { This }
 | mem { Get $1 }
 | LPAR expression RPAR { $2 }
-| MINUS expression %prec OPP { Unop (Not, $2) }
-| NEG expression { Unop (Opp, $2) }
+| MINUS expression %prec OPP { Unop (Opp, $2) }
+| NEG expression { Unop (Not, $2) }
 | expression bop expression { Binop ($2, $1, $3) }
 | NEW id=IDENT { New id }
 | NEW id=IDENT LPAR args RPAR { NewCstr (id, $4) }
@@ -197,4 +197,5 @@ access_rights:
 | NEQ { Neq }
 | AND { And }
 | OR {Or}
+| INSTANCEOF { Instanceof }
 ;

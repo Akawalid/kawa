@@ -1,22 +1,33 @@
-var point a;
-var point b;
+var cat a;
 
-class point {
+class animal {
+
+}
+
+class cat extends animal {
   attribute static int z;
   attribute int x;
   attribute int y;
-  method static void p(){
-    point.z=5;
+
+  method void constructor(){
+  }
+
+  method void p(){
+    if(this instanceof animal) {
+      print(-1);
+    }
   }
 }
 
+class dog extends animal {
+
+}
+
 main {
-  a = new point;
-  b = new point;
-  a.x = 1;
-  a.y = 2;
-  b.x = 3;
-  b.y = 4;
-  point.p();
-  print(point.z);
+  a = new cat();
+  if (a instanceof dog){
+    print(-1);
+  } else {
+    print(2);
+  }
 }

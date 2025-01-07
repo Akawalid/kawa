@@ -17,8 +17,8 @@ let this_k_found = ref false
 let typecheck_prog p =
   let tenv = add_env p.globals Env.empty in
   (* pour garder dans this la classe de l'objet courant*)
-  let get_class (l: class_def list) (class_name:string): class_def = 
-    try List.find (fun class_d -> class_d.class_name = class_name) l
+  let get_class (class_name:string): class_def = 
+    try List.find (fun class_d -> class_d.class_name = class_name) p.classes
     with Not_found -> error ("Missing declaration of the class " ^ class_name) 
   in
   
@@ -28,7 +28,7 @@ let typecheck_prog p =
     else 
       match o.parent with 
        None -> application o
-      | Some c -> ascendent_fold application (get_class p.classes c)
+      | Some c -> ascendent_fold application (get_class c)
     in
 (* 
   let rec subtype tho' tho =
@@ -53,7 +53,7 @@ let typecheck_prog p =
             if TClass o.class_name = tho then Some true
             else None
         )
-        (get_class p.classes tho')
+        (get_class tho')
         )
         <> None 
     | _-> tho' = tho (*si tho ou tho' sont des types de base*)
@@ -75,6 +75,13 @@ let typecheck_prog p =
       let tho2 = type_expr e2 tenv in
       if tho1 = tho2  then TBool
       else type_error tho2 tho1
+    | Binop(Instanceof, e, Get (Var c)) -> 
+      if not (List.exists (fun c_def -> c_def.class_name = c) p.classes) then error ( c ^ " is not a class.");
+      (match type_expr e  tenv with 
+        TClass _ -> TBool
+        | v -> error ("Expected object, got " ^ (typ_to_string v));
+      )
+    | Binop(Instanceof, _, _) -> error "Expected class after instanceof, got an other expression"
     | Binop(_, e1, e2) -> check e1 TInt tenv ; check e2 TInt tenv; TBool
     | Get mem_acc -> type_mem_access mem_acc tenv
     | This -> this_k_found := true;
@@ -83,10 +90,10 @@ let typecheck_prog p =
     | New cn -> type_constructor cn None tenv
     | NewCstr (s, el) -> type_constructor s (Some el) tenv
     | MethCall (Get (Var c), s, el) when List.exists (fun c_def -> c_def.class_name = c) p.classes ->
-      type_method s el (get_class p.classes c) tenv
+      type_method s el (get_class c) tenv
     | MethCall(e, s, el) ->
       match(type_expr e tenv) with
-        | TClass c -> type_method s el (get_class p.classes c) tenv
+        | TClass c -> type_method s el (get_class c) tenv
         | tho -> error ("Incompatible object type " ^ (typ_to_string tho))
 
     and check_arguments meth_name el ltypes = 
@@ -147,7 +154,7 @@ let typecheck_prog p =
         None -> TClass s
       | Some el ->  
         try
-          let o = List.find (fun obj -> obj.method_name = "constructor") (get_class p.classes s).methods in
+          let o = List.find (fun obj -> obj.method_name = "constructor") (get_class s).methods in
           (* if o.return <> TVoid || o.visibility <> PackagePrivate then error (s ^ "(constructor expected to be of type" ^ (typ_to_string TVoid) ^ " but found, " ^(typ_to_string o.return)); *)
           check_arguments "constructor" el o.params;
           assert (o.return = TVoid);
@@ -171,7 +178,7 @@ let typecheck_prog p =
         with Not_found -> None
         in
         ( 
-          match ascendent_fold app (get_class p.classes c) with 
+          match ascendent_fold app (get_class c) with 
             None -> error (c ^ " has no static attribut name: " ^ s)
             | Some v -> v
         )
@@ -186,7 +193,7 @@ let typecheck_prog p =
           with Not_found -> None
           in
           ( 
-            match ascendent_fold app (get_class p.classes c) with 
+            match ascendent_fold app (get_class c) with 
               None -> error (c ^ " has no attribute name: " ^ s)
               | Some v -> v
           )  

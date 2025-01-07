@@ -20,7 +20,7 @@ type access = Private | Protected | PackagePrivate
 type unop  = Opp | Not
 type binop = Add | Sub | Mul | Div | Rem
            | Lt  | Le  | Gt | Ge | Eq  | Neq
-           | And | Or
+           | And | Or | Instanceof
 
 (* Expressions *)
 type expr =

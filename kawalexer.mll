@@ -11,6 +11,7 @@
         "static", STATIC;
         "private", PRIVATE;
         "protected", PROTECTED;
+        "instanceof", INSTANCEOF;
         "print", PRINT;
         "main", MAIN;
         "true", TRUE;
