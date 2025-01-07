@@ -38,6 +38,7 @@ type expr =
   | NewCstr  of string * expr list
   (* Appel de méthode *)
   | MethCall of expr * string * expr list
+  | Cast of typ * expr
 
 (* Accès mémoire : variable ou attribut d'un objet *)
 and mem_access =

@@ -22,6 +22,7 @@
 %left LT LE GT GE INSTANCEOF
 %left PLUS MINUS
 %left MUL DIV MOD
+%right CAST
 %right OPP NEG
 %left DOT
 
@@ -166,6 +167,7 @@ expression:
 | NEW id=IDENT { New id }
 | NEW id=IDENT LPAR args RPAR { NewCstr (id, $4) }
 | expression DOT id=IDENT LPAR args RPAR { MethCall ($1, id, $5) }
+| LPAR typ RPAR expression %prec CAST { Cast($2, $4) }
 ;
 
 args_nempty:
