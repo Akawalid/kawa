@@ -85,7 +85,7 @@ let exec_prog (p: program): unit =
         let o = get_class cn in
         let fields = Hashtbl.create 16 in
         let app o = 
-          List.iter (fun (att, _) -> Hashtbl.add fields att Null) o.attributes;
+          List.iter (fun (att, _, _) -> Hashtbl.add fields att Null) o.attributes;
           None
         in
         let _ = ascendent_fold app o in
@@ -95,7 +95,7 @@ let exec_prog (p: program): unit =
         let o = get_class cn in
         let fields = Hashtbl.create 16 in
         let app o = 
-          List.iter (fun (att, _) -> Hashtbl.add fields att Null) o.attributes;
+          List.iter (fun (att, _, _) -> Hashtbl.add fields att Null) o.attributes;
           None
         in
         let _ = ascendent_fold app o in

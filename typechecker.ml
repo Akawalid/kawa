@@ -14,7 +14,6 @@ let add_env l tenv = List.fold_left (fun env (x, t) -> Env.add x t env) tenv l
 let typecheck_prog p =
   let tenv = add_env p.globals Env.empty in
   (* pour garder dans this la classe de l'objet courant*)
-  (**)
   let get_class (l: class_def list) (class_name:string): class_def = 
     try List.find (fun class_d -> class_d.class_name = class_name) l
     with Not_found -> error ("Missing declaration of the class " ^ class_name) 
@@ -86,6 +85,27 @@ let typecheck_prog p =
         | TClass c -> type_method s el (get_class p.classes c) tenv
         | tho -> error ("Incompatible object type " ^ (typ_to_string tho))
 
+    and check_arguments meth_name el ltypes = 
+      match el, ltypes with 
+      [], [] -> ()
+      | e::el, (_, tho)::ltypes ->
+        let tho' = type_expr e tenv in
+        if not (subtype tho' tho) then type_error tho' tho
+        ; check_arguments meth_name el ltypes
+      | _, [] -> error ("Expected less arguments in method " ^ meth_name)  
+      | [], (arg, tho)::_ -> error ("Missing argument " ^ arg ^ ": " ^ (typ_to_string tho) ^ "in method " ^ meth_name) 
+
+    and check_visibility entity_class class_app entity_name entity_visibility tenv = 
+        (*On cherche la classe appelante*) 
+        try match Env.find "this" tenv with 
+          TClass invoking_c -> 
+              if entity_visibility = Private && invoking_c <> entity_class (*appel dans une classe externe*) then error ("Can not access private attribute " ^ entity_name ^ " outside the class" ^ entity_class) 
+              else if entity_visibility = Protected && invoking_c <> class_app then error ("Can not access protected attribute " ^ entity_name ^ " outside the class " ^ class_app) 
+          | _ -> failwith "Typechecker problem"
+        with Not_found (*appel dans la main*) -> 
+              if entity_visibility = Private then error ("Can not access private attribute " ^ entity_name ^ " outside the class " ^ entity_class) 
+              else if entity_visibility = Protected then error ("Can not access protected attribute " ^ entity_name ^ " outside the class " ^ class_app) 
+    
     and type_method s el o tenv =
       (*
         s: method name
@@ -93,57 +113,56 @@ let typecheck_prog p =
         o: class_def
         return: method type if well defined
       *)
-      let rec loop el ltypes = 
-        match el, ltypes with 
-        [], [] -> ()
-        | e::el, (_, tho)::ltypes ->
-          let tho' = type_expr e tenv in
-          if not (subtype tho' tho) then type_error tho' tho
-          ; loop el ltypes
-        | _ -> error ("No method " ^ s ^ " found.")
-      in
+      let class_app = o.class_name in
       let app o =
         let methods =  o.methods in
         try
-          let o = List.find (fun obj -> obj.method_name = s) methods in
-          loop el o.params;
-          Some o.return
+          let o' = List.find (fun obj -> obj.method_name = s) methods in
+          (*
+          vérification de visibilité de la fonction, 
+            o.classname: classe ou la méthode se trouves 
+            class_app: classe appelante
+            s: nom de la method
+            o'.visibility: visibilité de la méthode
+          *)
+          check_visibility o.class_name class_app s o'.visibility tenv;
+          check_arguments s el o'.params;
+          Some o'.return
         with Not_found -> None
       in
-      match (ascendent_fold app o) with 
-      Some v -> v
-      | None ->  error ("Missing declaration of the method " ^ s)
+        match (ascendent_fold app o) with 
+        Some v -> v
+        | None ->  error ("Missing declaration of the method " ^ s)
   
-    and type_constructor s le tenv =
-      let app o = 
-        match le with 
-        None -> Some (TClass s)
-      | Some le ->  
-        try let tho = type_method "constructor" le o tenv in
-          if TVoid <> tho then error (s ^ "(constructor expected to be of type" ^ (typ_to_string TVoid) ^ " but found, " ^(typ_to_string tho))
-          else Some (TClass s)
-        with Error e -> None
-      in
-      match (ascendent_fold app (get_class p.classes s)) with 
-      Some v -> v
-      | None ->  error ("Missing declaration of the method " ^ s) 
-  
-  and type_mem_access m tenv = match m with
+    and type_constructor s el tenv =  
+        match el with 
+        None -> TClass s
+      | Some el ->  
+        try
+          let o = List.find (fun obj -> obj.method_name = "constructor") (get_class p.classes s).methods in
+          (* if o.return <> TVoid || o.visibility <> PackagePrivate then error (s ^ "(constructor expected to be of type" ^ (typ_to_string TVoid) ^ " but found, " ^(typ_to_string o.return)); *)
+          check_arguments s el o.params;
+          assert (o.return = TVoid);
+          o.return
+        with Not_found -> error ("Missing declaration of the constructor")
+            
+    and type_mem_access m tenv = match m with
     | Var s -> 
       (
       try Env.find s tenv
       with Not_found -> error ("Missing declaration of the variable " ^ s)
       )
-    | Field(e, s) ->       
+    | Field(e, s) ->    
       match type_expr e tenv with 
         TClass c -> 
           let app o = 
           try 
-            let _, tho = List.find (fun (s', tho) -> s' = s) o.attributes in
-            Some tho  
+            let _, tho, visibility = List.find (fun (s', _, _) -> s' = s) o.attributes in
+            check_visibility o.class_name c s visibility tenv;
+            Some tho
           with Not_found -> None
           in
-          (
+          ( 
             match ascendent_fold app (get_class p.classes c) with 
               None -> error (c ^ " has no attribute name: " ^ s)
               | Some v -> v
@@ -184,7 +203,7 @@ let typecheck_prog p =
     (* les attributs doivent être visibles pour les méthodes*)
     let environement = ref (Env.add "this" (TClass o.class_name) tenv) in
     let app o = 
-      environement := add_env  o.attributes (!environement);
+      environement := List.fold_left (fun acc (n, tho, _) -> Env.add n tho acc) (!environement) o.attributes;
       None
     in
     let _ = ascendent_fold app o in

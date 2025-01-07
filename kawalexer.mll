@@ -7,7 +7,10 @@
   let keyword_or_ident =
     let h = Hashtbl.create 17 in
     List.iter (fun (s, k) -> Hashtbl.add h s k)
-      [ "print", PRINT;
+      [ 
+        "private", PRIVATE;
+        "protected", PROTECTED;
+        "print", PRINT;
         "main", MAIN;
         "true", TRUE;
         "false", FALSE;

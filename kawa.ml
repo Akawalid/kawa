@@ -16,6 +16,7 @@ let typ_to_string = function
   | TBool    -> "bool"
   | TClass c -> c
 
+type access = Private | Protected | PackagePrivate
 type unop  = Opp | Not
 type binop = Add | Sub | Mul | Div | Rem
            | Lt  | Le  | Gt | Ge | Eq  | Neq
@@ -67,6 +68,7 @@ and seq = instr list
    Le corps de la méthode est similaire au corps d'une fonction. *)
 type method_def = {
     method_name: string;
+    visibility: access;
     code: seq;
     params: (string * typ) list;
     locals: (string * typ) list;
@@ -83,7 +85,7 @@ type method_def = {
    paramètre implicite this. *)
 type class_def = {
     class_name: string;
-    attributes: (string * typ) list;
+    attributes: (string * typ * access) list;
     methods: method_def list;
     parent: string option;
   }

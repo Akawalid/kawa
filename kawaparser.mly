@@ -11,7 +11,8 @@
 %token LPAR RPAR BEGIN END SEMI COMMA DOT
 %token MINUS PLUS MUL DIV MOD
 %token NEG EQUAL NEQ LT LE GT GE AND OR TRUE FALSE
-%token ASSIGN PRINT VAR ATTRIBUTE METHOD CLASS EXTENDS NEW THIS IF ELSE
+%token VAR PROTECTED PRIVATE METHOD ATTRIBUTE CLASS EXTENDS
+%token ASSIGN PRINT NEW THIS IF ELSE
 %token WHILE RETURN TINT TBOOL TVOID
 %token EOF
 
@@ -56,17 +57,18 @@ parent:
 ;
 
 att_decl:
-|  ATTRIBUTE tho=typ id=IDENT SEMI { id, tho }
+|  ATTRIBUTE visibility=access_rights tho=typ id=IDENT SEMI { id, tho, visibility }
 ;
 
 method_def:
-| METHOD tho=typ id=IDENT LPAR params=params RPAR BEGIN
+| METHOD visibility=access_rights tho=typ id=IDENT LPAR params=params RPAR BEGIN
   locals=list(var_decl)
   code=list(instruction)
  END 
  {
   {
     method_name = id;
+    visibility = visibility;
     code = code;
     params = params;
     locals = locals;
@@ -143,6 +145,11 @@ args:
 | { [] }
 | args_nempty { $1 }
 ;
+
+access_rights:
+| PRIVATE { Private }
+| PROTECTED { Protected }
+| { PackagePrivate }
 
 %inline bop: (*%inline est trouvé dans la documentation page 17, il sert à linéariser bop, cela sert à bien définir les priorité dans la dérivation expression bop expression*)
 | PLUS { Add }
