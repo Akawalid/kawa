@@ -11,11 +11,10 @@
 %token LPAR RPAR BEGIN END SEMI COMMA DOT
 %token MINUS PLUS MUL DIV MOD
 %token NEG EQUAL NEQ LT LE GT GE AND OR TRUE FALSE
-%token VAR PROTECTED PRIVATE METHOD ATTRIBUTE CLASS EXTENDS
+%token VAR STATIC PROTECTED PRIVATE METHOD ATTRIBUTE CLASS EXTENDS
 %token ASSIGN PRINT NEW THIS IF ELSE
 %token WHILE RETURN TINT TBOOL TVOID
 %token EOF
-
 
 %left OR
 %left AND
@@ -42,10 +41,25 @@ class_def:
     meths=list(method_def)
   END 
   {
+    let atts, s_atts = 
+      List.fold_left (fun (acc1, acc2) (static, e) ->
+        if static then acc1, e::acc2
+        else e::acc1, acc2
+       ) ([], []) atts
+    in
+
+    let meths, s_meths = 
+      List.fold_left (fun (acc1, acc2) (static, m) ->
+        if static then acc1, m::acc2
+        else m::acc1, acc2
+       ) ([], []) meths
+    in
     {
       class_name = id;
       attributes = atts;
+      s_attributs = s_atts;
       methods = meths;
+      s_methods = s_meths;
       parent = pr;
     }
   }
@@ -57,15 +71,33 @@ parent:
 ;
 
 att_decl:
-|  ATTRIBUTE visibility=access_rights tho=typ id=IDENT SEMI { id, tho, visibility }
+| ATTRIBUTE STATIC typ id=IDENT SEMI { true, (id, $3, PackagePrivate)}
+| ATTRIBUTE access_rights typ id=IDENT SEMI { false, (id, $3, $2) }
 ;
 
 method_def:
+| METHOD STATIC tho=typ id=IDENT LPAR params=params RPAR BEGIN
+  locals=list(var_decl)
+  code=list(instruction)
+ END 
+  {
+  true, 
+  {
+    method_name = id;
+    visibility = PackagePrivate;
+    code = code;
+    params = params;
+    locals = locals;
+    return = tho;
+  }
+ }
+
 | METHOD visibility=access_rights tho=typ id=IDENT LPAR params=params RPAR BEGIN
   locals=list(var_decl)
   code=list(instruction)
  END 
  {
+  false, 
   {
     method_name = id;
     visibility = visibility;

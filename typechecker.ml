@@ -103,8 +103,8 @@ let typecheck_prog p =
               else if entity_visibility = Protected && invoking_c <> class_app then error ("Can not access protected attribute " ^ entity_name ^ " outside the class " ^ class_app) 
           | _ -> failwith "Typechecker problem"
         with Not_found (*appel dans la main*) -> 
-              if entity_visibility = Private then error ("Can not access private attribute " ^ entity_name ^ " outside the class " ^ entity_class) 
-              else if entity_visibility = Protected then error ("Can not access protected attribute " ^ entity_name ^ " outside the class " ^ class_app) 
+              if entity_visibility = Private then error ("Can not access private entity " ^ entity_name ^ " outside the class " ^ entity_class) 
+              else if entity_visibility = Protected then error ("Can not access protected entity " ^ entity_name ^ " outside the class " ^ class_app) 
     
     and type_method s el o tenv =
       (*
@@ -141,9 +141,9 @@ let typecheck_prog p =
         try
           let o = List.find (fun obj -> obj.method_name = "constructor") (get_class p.classes s).methods in
           (* if o.return <> TVoid || o.visibility <> PackagePrivate then error (s ^ "(constructor expected to be of type" ^ (typ_to_string TVoid) ^ " but found, " ^(typ_to_string o.return)); *)
-          check_arguments s el o.params;
+          check_arguments "constructor" el o.params;
           assert (o.return = TVoid);
-          o.return
+          TClass s
         with Not_found -> error ("Missing declaration of the constructor")
             
     and type_mem_access m tenv = match m with
@@ -211,6 +211,11 @@ let typecheck_prog p =
     List.iter (fun m -> check_mdef m tenv ) o.methods;
     
   and check_mdef m tenv =
+    (*constructeur à une vérification spéciale*)
+    if m.method_name ="constructor"           
+       && (m.return <> TVoid || m.visibility <> PackagePrivate) 
+    then error ("constructor can not have a restricted visibility (Private/Protected)."); 
+    
     let tenv = add_env m.params (add_env m.locals tenv) in
     check_seq m.code m.return tenv;
     if(m.return <> TVoid && not(return_seq m.code)) then error ("Expected 'return' at the end of the method " ^ m.method_name)   

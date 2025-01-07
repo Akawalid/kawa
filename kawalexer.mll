@@ -8,6 +8,7 @@
     let h = Hashtbl.create 17 in
     List.iter (fun (s, k) -> Hashtbl.add h s k)
       [ 
+        "static", STATIC;
         "private", PRIVATE;
         "protected", PROTECTED;
         "print", PRINT;
