@@ -11,6 +11,9 @@ type tenv = typ Env.t
 
 let add_env l tenv = List.fold_left (fun env (x, t) -> Env.add x t env) tenv l
 
+(*this variable is used for detecting the use of 'this' keyword in a static method*)
+let this_k_found = ref false
+
 let typecheck_prog p =
   let tenv = add_env p.globals Env.empty in
   (* pour garder dans this la classe de l'objet courant*)
@@ -74,12 +77,13 @@ let typecheck_prog p =
       else type_error tho2 tho1
     | Binop(_, e1, e2) -> check e1 TInt tenv ; check e2 TInt tenv; TBool
     | Get mem_acc -> type_mem_access mem_acc tenv
-    | This ->
+    | This -> this_k_found := true;
       (try  Env.find "this" tenv  
       with Not_found -> error "'this' keyword is used outside a class definition.")
     | New cn -> type_constructor cn None tenv
     | NewCstr (s, el) -> type_constructor s (Some el) tenv
-    
+    | MethCall (Get (Var c), s, el) when List.exists (fun c_def -> c_def.class_name = c) p.classes ->
+      type_method s el (get_class p.classes c) tenv
     | MethCall(e, s, el) ->
       match(type_expr e tenv) with
         | TClass c -> type_method s el (get_class p.classes c) tenv
@@ -115,9 +119,7 @@ let typecheck_prog p =
       *)
       let class_app = o.class_name in
       let app o =
-        let methods =  o.methods in
-        try
-          let o' = List.find (fun obj -> obj.method_name = s) methods in
+        try let o' = List.find (fun obj -> obj.method_name = s) o.methods in
           (*
           vérification de visibilité de la fonction, 
             o.classname: classe ou la méthode se trouves 
@@ -128,7 +130,13 @@ let typecheck_prog p =
           check_visibility o.class_name class_app s o'.visibility tenv;
           check_arguments s el o'.params;
           Some o'.return
-        with Not_found -> None
+        with Not_found ->
+          (*On vérifie dans les méthodes statiques*) 
+          try let o' = List.find (fun obj -> obj.method_name = s) o.s_methods in
+            check_visibility o.class_name class_app s o'.visibility tenv;
+            check_arguments s el o'.params;
+            Some o'.return
+          with Not_found -> None
       in
         match (ascendent_fold app o) with 
         Some v -> v
@@ -151,7 +159,22 @@ let typecheck_prog p =
       (
       try Env.find s tenv
       with Not_found -> error ("Missing declaration of the variable " ^ s)
+        
       )
+    | Field (Get (Var c), s) when List.exists (fun c_def -> c_def.class_name = c) p.classes ->
+      (*pour traiter le cas des appels static*)
+      let app o = 
+        try 
+          let _, tho, visibility = List.find (fun (s', _, _) -> s' = s) o.s_attributs in
+          check_visibility o.class_name c s visibility tenv;
+          Some tho
+        with Not_found -> None
+        in
+        ( 
+          match ascendent_fold app (get_class p.classes c) with 
+            None -> error (c ^ " has no static attribut name: " ^ s)
+            | Some v -> v
+        )
     | Field(e, s) ->    
       match type_expr e tenv with 
         TClass c -> 
@@ -166,7 +189,7 @@ let typecheck_prog p =
             match ascendent_fold app (get_class p.classes c) with 
               None -> error (c ^ " has no attribute name: " ^ s)
               | Some v -> v
-          )
+          )  
         | _ -> error ("e is not an object in e." ^ s)     
   in
 
@@ -209,13 +232,22 @@ let typecheck_prog p =
     let _ = ascendent_fold app o in
     let tenv = !environement in
     List.iter (fun m -> check_mdef m tenv ) o.methods;
-    
+    List.iter (fun m -> check_s_mdef m tenv ) o.s_methods;
+       
+  and check_s_mdef m tenv =
+    if m.method_name = "constructor" then error "constructor method can not be static in class";
+    check_mdef m tenv;
+    if !this_k_found then begin
+      this_k_found := false;
+      error ("'this' keyword can not be referenced in a static method " ^ m.method_name)
+    end
+
   and check_mdef m tenv =
     (*constructeur à une vérification spéciale*)
     if m.method_name ="constructor"           
        && (m.return <> TVoid || m.visibility <> PackagePrivate) 
     then error ("constructor can not have a restricted visibility (Private/Protected)."); 
-    
+
     let tenv = add_env m.params (add_env m.locals tenv) in
     check_seq m.code m.return tenv;
     if(m.return <> TVoid && not(return_seq m.code)) then error ("Expected 'return' at the end of the method " ^ m.method_name)   

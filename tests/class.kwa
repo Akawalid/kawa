@@ -2,8 +2,12 @@ var point a;
 var point b;
 
 class point {
+  attribute static int z;
   attribute int x;
   attribute int y;
+  method static void p(){
+    point.z=5;
+  }
 }
 
 main {
@@ -13,5 +17,6 @@ main {
   a.y = 2;
   b.x = 3;
   b.y = 4;
-  print(a.x + a.y + b.x + b.y);
+  point.p();
+  print(point.z);
 }
