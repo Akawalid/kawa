@@ -9,6 +9,7 @@
     List.iter (fun (s, k) -> Hashtbl.add h s k)
       [ 
         "static", STATIC;
+        "final", FINAL;
         "private", PRIVATE;
         "protected", PROTECTED;
         "instanceof", INSTANCEOF;
@@ -63,6 +64,8 @@ rule token = parse
   | ")"   { RPAR }
   | "{"   { BEGIN }
   | "}"   { END }
+  | "["   { LBRACK }
+  | "]"   { RBRACK }
   | "-"   { MINUS }
   | "!"   { NEG }
   | "+"   { PLUS }

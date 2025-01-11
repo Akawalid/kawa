@@ -9,12 +9,14 @@ type typ =
   | TInt
   | TBool
   | TClass of string
+  | TArray of typ
 
-let typ_to_string = function
+let rec typ_to_string = function
   | TVoid    -> "void"
   | TInt     -> "int"
   | TBool    -> "bool"
   | TClass c -> c
+  | TArray typ -> (typ_to_string typ) ^ "[]"
 
 type access = Private | Protected | PackagePrivate
 type unop  = Opp | Not
@@ -36,14 +38,23 @@ type expr =
   (* Création d'un nouvel objet *)
   | New      of string
   | NewCstr  of string * expr list
+  (*cas de création d'un tableau avec: new int[9][6][][]... 
+    typ: type de base du tableau
+    expr option list: represent la taille des dimensions
+    exemple:
+    cette expression :  new int[9][6][][] est converti vers NewArray(TInt, [Some 9; Some 6; None None])
+  *)
+  | NewArray  of typ * (expr option) list 
   (* Appel de méthode *)
   | MethCall of expr * string * expr list
-  | Cast of typ * expr
+  | Array of expr list
+  (* | Cast of typ * expr *)
 
 (* Accès mémoire : variable ou attribut d'un objet *)
 and mem_access =
   | Var   of string
   | Field of expr (* objet *) * string (* nom d'un attribut *)
+  | Tab of expr * int
 
 (* Instructions *)
 type instr =
@@ -72,7 +83,7 @@ type method_def = {
     visibility: access;
     code: seq;
     params: (string * typ) list;
-    locals: (string * typ) list;
+    locals: (string * typ * (expr option)) list;
     return: typ;
   }
         
@@ -86,8 +97,8 @@ type method_def = {
    paramètre implicite this. *)
 type class_def = {
     class_name: string;
-    attributes: (string * typ * access) list;
-    s_attributs: (string * typ * access) list;
+    attributes: (string * typ * access * bool * (expr option)) list; (*bool: pour savoir s'il est mutable*)
+    s_attributs: (string * typ * access * bool * (expr option)) list;
     methods: method_def list;
     s_methods: method_def list;
     parent: string option;
@@ -97,6 +108,6 @@ type class_def = {
    d'instructions *)
 type program = {
     classes: class_def list;
-    globals: (string * typ) list;
+    globals: (string * typ * (expr option)) list; (*expr représente l'initialisateur de la variable s'il existe*)
     main: seq;
   }

@@ -14,5 +14,5 @@ class recursion {
 
 main {
   a = new recursion;
-  print(a.fibo(5));
+  print(a.fibo(10));
 }

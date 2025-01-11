@@ -5,13 +5,20 @@
 
 %}
 
+%{
+  (*Les fonctions suivantes servent à compacter le code et le rendre facile à lire*)
+
+  (*fusionne une liste de listes en un seule liste contenant tous les éléments. Elle prend une liste de listes en paramètre et renvoie une liste aplatie. *)
+  let flatten_list l = List.fold_left (fun acc e -> e @ acc) []  l
+%}
+
 %token <int> INT
 %token <string> IDENT
 %token MAIN
-%token LPAR RPAR BEGIN END SEMI COMMA DOT
+%token LPAR RPAR RBRACK LBRACK BEGIN END SEMI COMMA DOT
 %token MINUS PLUS MUL DIV MOD
 %token NEG EQUAL NEQ LT LE GT GE AND OR TRUE FALSE INSTANCEOF
-%token VAR STATIC PROTECTED PRIVATE METHOD ATTRIBUTE CLASS EXTENDS
+%token VAR STATIC FINAL PROTECTED PRIVATE METHOD ATTRIBUTE CLASS EXTENDS
 %token ASSIGN PRINT NEW THIS IF ELSE
 %token WHILE RETURN TINT TBOOL TVOID
 %token EOF
@@ -22,7 +29,6 @@
 %left LT LE GT GE INSTANCEOF
 %left PLUS MINUS
 %left MUL DIV MOD
-%right CAST
 %right OPP NEG
 %left DOT
 
@@ -33,7 +39,7 @@
 
 program:
 | globals=list(var_decl) classes=list(class_def) MAIN BEGIN main=list(instruction) END EOF
-    { {classes; globals; main} }
+    { {classes; globals=flatten_list globals; main} }
 ;
 
 class_def:
@@ -42,10 +48,10 @@ class_def:
     meths=list(method_def)
   END 
   {
-    let atts, s_atts = 
+    let atts, s_atts =
       List.fold_left (fun (acc1, acc2) (static, e) ->
-        if static then acc1, e::acc2
-        else e::acc1, acc2
+        if static then acc1, e@acc2
+        else e@acc1, acc2
        ) ([], []) atts
     in
 
@@ -71,13 +77,40 @@ parent:
 |  EXTENDS id=IDENT { Some id }
 ;
 
+att_decl_:
+| id=IDENT { id, None }
+| id=IDENT ASSIGN expression { id, Some $3 }
+
 att_decl:
-| ATTRIBUTE STATIC typ id=IDENT SEMI { true, (id, $3, PackagePrivate)}
-| ATTRIBUTE access_rights typ id=IDENT SEMI { false, (id, $3, $2) }
+| ATTRIBUTE FINAL STATIC PROTECTED typ ld=separated_nonempty_list(COMMA, att_decl_) SEMI { true, List.map (fun (id, e) -> id, $5, Protected, true, e) ld }
+| ATTRIBUTE STATIC FINAL PROTECTED typ ld=separated_nonempty_list(COMMA, att_decl_) SEMI { true, List.map (fun (id, e) -> id, $5, Protected, true, e) ld }
+| ATTRIBUTE FINAL PROTECTED STATIC typ ld=separated_nonempty_list(COMMA, att_decl_) SEMI { true, List.map (fun (id, e) -> id, $5, Protected, true, e) ld }
+| ATTRIBUTE STATIC PROTECTED FINAL typ ld=separated_nonempty_list(COMMA, att_decl_) SEMI { true, List.map (fun (id, e) -> id, $5, Protected, true, e) ld }
+| ATTRIBUTE PROTECTED FINAL STATIC typ ld=separated_nonempty_list(COMMA, att_decl_) SEMI { true, List.map (fun (id, e) -> id, $5, Protected, true, e) ld }
+| ATTRIBUTE PROTECTED STATIC FINAL typ ld=separated_nonempty_list(COMMA, att_decl_) SEMI { true, List.map (fun (id, e) -> id, $5, Protected, true, e) ld }
+
+| ATTRIBUTE FINAL STATIC PRIVATE typ ld=separated_nonempty_list(COMMA, att_decl_) SEMI { true, List.map (fun (id, e) -> id, $5, Private, true, e) ld }
+| ATTRIBUTE STATIC FINAL PRIVATE typ ld=separated_nonempty_list(COMMA, att_decl_) SEMI { true, List.map (fun (id, e) -> id, $5, Private, true, e) ld }
+| ATTRIBUTE FINAL PRIVATE STATIC typ ld=separated_nonempty_list(COMMA, att_decl_) SEMI { true, List.map (fun (id, e) -> id, $5, Private, true, e) ld }
+| ATTRIBUTE STATIC PRIVATE FINAL typ ld=separated_nonempty_list(COMMA, att_decl_) SEMI { true, List.map (fun (id, e) -> id, $5, Private, true, e) ld }
+| ATTRIBUTE PRIVATE FINAL STATIC typ ld=separated_nonempty_list(COMMA, att_decl_) SEMI { true, List.map (fun (id, e) -> id, $5, Private, true, e) ld }
+| ATTRIBUTE PRIVATE STATIC FINAL typ ld=separated_nonempty_list(COMMA, att_decl_) SEMI { true, List.map (fun (id, e) -> id, $5, Private, true, e) ld }
+
+| ATTRIBUTE FINAL STATIC typ ld=separated_nonempty_list(COMMA, att_decl_) SEMI { true, List.map (fun (id, e) -> id, $4, PackagePrivate, true, e) ld}
+| ATTRIBUTE STATIC FINAL typ ld=separated_nonempty_list(COMMA, att_decl_) SEMI { true, List.map (fun (id, e) -> id, $4, PackagePrivate, true, e) ld}
+
+| ATTRIBUTE STATIC typ ld=separated_nonempty_list(COMMA, att_decl_) SEMI { true, List.map (fun (id, e) -> id, $3, PackagePrivate, false, e) ld }
+| ATTRIBUTE FINAL typ ld=separated_nonempty_list(COMMA, att_decl_) SEMI { false, List.map (fun (id, e) -> id, $3, PackagePrivate, true, e) ld}
+| ATTRIBUTE typ ld=separated_nonempty_list(COMMA, att_decl_) SEMI { false, List.map (fun (id, e) -> id, $2, PackagePrivate, false, e) ld}
 ;
 
+access_rights:
+| PRIVATE { Private }
+| PROTECTED { Protected }
+| { PackagePrivate }
+;
 method_def:
-| METHOD STATIC tho=typ id=IDENT LPAR params=params RPAR BEGIN
+| METHOD STATIC visibility=access_rights tho=typ id=IDENT LPAR params=params RPAR BEGIN
   locals=list(var_decl)
   code=list(instruction)
  END 
@@ -85,10 +118,10 @@ method_def:
   true, 
   {
     method_name = id;
-    visibility = PackagePrivate;
+    visibility = visibility;
     code = code;
     params = params;
-    locals = locals;
+    locals = flatten_list locals;
     return = tho;
   }
  }
@@ -104,20 +137,26 @@ method_def:
     visibility = visibility;
     code = code;
     params = params;
-    locals = locals;
+    locals = flatten_list locals;
     return = tho;
   }
  }
+
+ 
 ;
 
 typ:
-| TBOOL { TBool }
-| TVOID { TVoid }
-| TINT { TInt }
-| id=IDENT { TClass(id) }
+| typ_base { $1 }
+| typ LBRACK RBRACK { TArray $1 }
 ;
 
-params_nempty:
+typ_base:
+| TBOOL { TBool }
+| TINT { TInt }
+| TVOID { TVoid }
+| id=IDENT { TClass(id) }
+
+params_nempty: 
 | tho=typ id=IDENT {[id, tho]}
 | params=params COMMA tho=typ id=IDENT { (id, tho)::params }
 ; 
@@ -128,8 +167,8 @@ params:
 ;
 
 var_decl:
-| VAR tho=typ id=IDENT SEMI
-  {id, tho}
+| VAR tho=typ ld=separated_nonempty_list(COMMA, att_decl_) SEMI
+  {List.map (fun (id, e) -> id, tho, e) ld}
 ;
 
 instruction:
@@ -153,6 +192,7 @@ instruction:
 mem:
 | id=IDENT { Var(id) }
 | e=expression DOT id=IDENT { Field(e, id) }
+| n=INT LBRACK e=expression RBRACK { Tab(e, n) }
 
 expression:
 | n=INT { Int(n) }
@@ -167,7 +207,23 @@ expression:
 | NEW id=IDENT { New id }
 | NEW id=IDENT LPAR args RPAR { NewCstr (id, $4) }
 | expression DOT id=IDENT LPAR args RPAR { MethCall ($1, id, $5) }
-| LPAR typ RPAR expression %prec CAST { Cast($2, $4) }
+| LBRACK separated_list(SEMI, expression) RBRACK { Array $2 }
+| NEW typ_base d=dimensions { NewArray($2, d) }
+;
+
+dimensions:
+| LBRACK e=expression RBRACK maybe_empty_dimensions { (Some e)::$4 }
+;
+
+maybe_empty_dimensions:
+| { [] }
+| LBRACK RBRACK empty_dimensions_or_nothing { None::$3 }
+| dimensions { $1 }
+;
+
+empty_dimensions_or_nothing:
+| { [] }
+| LBRACK RBRACK empty_dimensions_or_nothing { None::$3 }
 ;
 
 args_nempty:
@@ -179,11 +235,6 @@ args:
 | { [] }
 | args_nempty { $1 }
 ;
-
-access_rights:
-| PRIVATE { Private }
-| PROTECTED { Protected }
-| { PackagePrivate }
 
 %inline bop: (*%inline est trouvé dans la documentation page 17, il sert à linéariser bop, cela sert à bien définir les priorité dans la dérivation expression bop expression*)
 | PLUS { Add }
