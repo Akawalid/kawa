@@ -1,0 +1,10 @@
+p0 p;
+
+class p0 {
+    void recursion(){}
+}
+
+main{
+    p = new p0;
+    p.recursiuon();
+}

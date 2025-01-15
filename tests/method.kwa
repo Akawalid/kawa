@@ -1,15 +1,15 @@
-var point p;
+point p;
 
 class point {
-  attribute int x;
-  attribute int y;
+  int x;
+  int y;
 
-  method void constructor(int a, int b) {
+  void constructor(int a, int b) {
     this.x = a;
     this.y = b;
   }
 
-  method int somme() {
+  int somme() {
     return this.x + this.y;
   }
 }

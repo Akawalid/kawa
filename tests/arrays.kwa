@@ -1,0 +1,34 @@
+test p;
+
+class test {
+    bool [][] array, array2;
+
+    void constructor(){
+        this.array = new bool[3][];
+        this.array2 = [
+            [true; true];
+            [false; false]
+        ];
+    }
+
+    void init(){
+        //================= TEST 1 =================
+        //0[this.array] = new int[2];
+        0[this.array] = new bool[2];
+        1[this.array] = new bool[2];
+        2[this.array] = new bool[2];
+    }
+}
+
+main {
+    p = new test();
+    p.init();
+    //===================== TEST 2 ==================
+    //if(1[0[p.array]]){
+      //  print(5);
+    //}
+    1[0[p.array]] = true;
+    if(1[0[p.array]]){
+        print(5);
+    }
+}

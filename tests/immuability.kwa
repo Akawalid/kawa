@@ -1,0 +1,43 @@
+testFinal tf;
+
+/*=================TEST N01 ====================
+class testFinal {
+    static final int a = 42, b;
+    void constructor() {
+    }
+}
+*/
+
+/*=================TEST N02 ====================
+class testFinal {
+    static final int a = 42;
+    final int [] tab;
+    void constructor() {
+
+    }
+    void p(){
+        this.tab = [1];
+    }
+}
+*/
+
+/*=================TEST N03 ====================*/
+class p0 {
+    //=================TEST N04 ===================
+    //private final int [] tab;
+    final int [] tab;
+}
+
+class testFinal extends p0 {
+    static final int a = 42;
+    void constructor() {
+        this.tab = new int[2];
+        0[this.tab] = 0;
+        //==========TEST N05============
+        //this.tab = new int[5]; //ça devrait renvoyer une erreur, car tab est final
+    }
+}
+
+main {
+    tf = new testFinal();
+}

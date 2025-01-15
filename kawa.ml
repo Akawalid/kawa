@@ -10,13 +10,19 @@ type typ =
   | TBool
   | TClass of string
   | TArray of typ
+  | TNull 
+  (*
+  TNull est considéré comme la classe vide, ou l'ensemble vide, i lest considéré sous type de toutes les classes
+  Il n'y a que la constante null qui a ce type
+  *)
 
 let rec typ_to_string = function
-  | TVoid    -> "void"
-  | TInt     -> "int"
-  | TBool    -> "bool"
+  | TVoid    -> "<void>"
+  | TInt     -> "<int>"
+  | TBool    -> "<bool>"
   | TClass c -> c
   | TArray typ -> (typ_to_string typ) ^ "[]"
+  | TNull -> "<null>" 
 
 type access = Private | Protected | PackagePrivate
 type unop  = Opp | Not
@@ -28,6 +34,7 @@ type binop = Add | Sub | Mul | Div | Rem
 type expr =
   (* Base arithmétique *)
   | Int    of int
+  | NullPtr
   | Bool   of bool
   | Unop   of unop * expr
   | Binop  of binop * expr * expr
@@ -85,7 +92,15 @@ type method_def = {
     params: (string * typ) list;
     locals: (string * typ * (expr option)) list;
     return: typ;
-  }
+}
+
+(* Définition de méthode abstraite *)
+type abstract_method_def = {
+    abs_method_name: string;
+    abs_visibility: access;
+    abs_params: typ list;
+    abs_return: typ;
+}
         
 (* Définition de classe 
 
@@ -97,10 +112,17 @@ type method_def = {
    paramètre implicite this. *)
 type class_def = {
     class_name: string;
+    is_abstract: bool;
     attributes: (string * typ * access * bool * (expr option)) list; (*bool: pour savoir s'il est mutable*)
     s_attributs: (string * typ * access * bool * (expr option)) list;
     methods: method_def list;
     s_methods: method_def list;
+    
+    (*
+      le champs suivant sert à stoquer les signatures des méthodes statiques,
+      l'invarient à garder est: si non is_abstract => Length abstract_methods = 0
+    *)
+    abstract_methods: abstract_method_def list;
     parent: string option;
   }
 

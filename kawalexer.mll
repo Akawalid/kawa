@@ -12,15 +12,14 @@
         "final", FINAL;
         "private", PRIVATE;
         "protected", PROTECTED;
+        "null", NULL;
         "instanceof", INSTANCEOF;
         "print", PRINT;
         "main", MAIN;
         "true", TRUE;
         "false", FALSE;
-        "var", VAR;
-        "attribute", ATTRIBUTE;
-        "method", METHOD;
         "class",CLASS;
+        "abstract", ABSTRACT;
         "extends", EXTENDS;
         "new",NEW;
         "this",THIS;
@@ -35,9 +34,6 @@
     fun s ->
       try Hashtbl.find h s
       with Not_found -> 
-        (* les classes commencent en majuscule
-        if Char.code s.[0] > 64 && Char.code s.[0] < 92 then CLASS_ID s
-        else IDENT(s) *)
         IDENT (s)
         
 }
@@ -72,6 +68,7 @@ rule token = parse
   | "="   { ASSIGN }
   | "*"   { MUL }
   | "/"   { DIV }
+  | "%"   { MOD }
   | "=="  { EQUAL }
   | "!="  { NEQ }
   | "<"   { LT }

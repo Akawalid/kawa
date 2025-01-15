@@ -1,6 +1,6 @@
-var int a;
-var int n;
-var int acc;
+int a;
+int n;
+int acc;
 
 main {
   a = 2;

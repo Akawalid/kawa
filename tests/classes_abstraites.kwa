@@ -1,0 +1,48 @@
+p2 p;
+p1 q;
+
+abstract class p0 {
+ void constructor(){}
+ abstract void p(int a, p0 c);
+}
+
+abstract class p1 extends p0 {
+ void constructor(){}
+ void p(){}
+ abstract void pp(int a, p0 c);
+}
+
+/*======================= TEST N01====================*/
+   class p2 extends p1 {
+      int i, j=2;
+      void constructor(){}
+      void pp(int a, p0 c){}
+      void p(int a, p0 c){}
+      void afficher(){
+         this.i = 1;
+         print(this.i);
+         print(this.j);
+      }
+   }
+
+/*======================= TEST N02====================
+   class p2 extends p1 {
+
+   void constructor(){}
+   void pp(int a, p0 c){}
+
+   }
+*/
+
+/*======================= TEST N03====================
+   class p2 extends p1 {
+      void constructor(){}
+   }
+*/
+
+main {
+ p = new p2();
+ p.afficher();
+ //======================== TEST 04 (il faut décommenter TEST 01 pour voir l'erreur) ======================
+ // q = new p1();
+}

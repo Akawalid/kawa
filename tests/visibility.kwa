@@ -1,0 +1,54 @@
+p1 p;
+
+class p0 {
+    private int a0;
+    protected int a1;
+    int a2; 
+
+    void constructor(){
+        this.a0 = 5;
+        this.a1 = 6;
+    }
+
+    protected void p(){
+    }
+
+}
+
+class p1 extends p0 {
+    private int s;
+    private static final bool f = true;
+
+    void constructor(int s0){
+        this.s = s0;
+        this.a1 = 10;
+        //=============================== TEST 01 =====================
+        //this.a0 = 5;
+    }
+
+    void afficher(){
+        print(this.s);
+        print(this.a1);
+        if(p1.f){
+            print(1);
+        }
+    }
+
+}
+
+main {
+    p = new p1(20);
+    p.afficher();
+    p.a2 = 11;
+    //============================= TEST 02 =========================
+    //print(p.a0);
+    //============================= TEST 03 =========================
+    //print(p.a1);
+    //============================= TEST 04 =========================
+    //if(p.f){print(2);}
+    //============================= TEST 05 =========================
+    //if(p1.f){print(2);}
+    //============================= TEST 07 =========================
+   // p.p();
+
+}
