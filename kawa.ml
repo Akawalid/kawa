@@ -1,7 +1,7 @@
 (**
    Kawa : un petit langage à objets inspiré de Java
  *)
-
+(**)
 (* Types déclarés pour les attributs, pour les variables, et pour les 
    paramètres et résultats des méthodes. *)
 type typ =

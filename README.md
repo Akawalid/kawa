@@ -22,7 +22,7 @@
     - les acces au tableau se font comme le suivant tab[n] dans Kawa est n[tab]
     - final est implementé seulement sur les attributs
 
-## 0. **Kawa**
+## 1. **Kawa**
 
 ### Les éléments rajoutés :
 -Dans `typ`, les élements rajoutés sont :
