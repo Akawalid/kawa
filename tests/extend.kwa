@@ -1,36 +1,36 @@
 
-paire p;
-paire pt;
-triple t;
+var paire p;
+var paire pt;
+var triple t;
 
 class paire {
-  int x;
-  int y;
+  attribute int x;
+  attribute int y;
 
-  void constructor(int x, int y) {
+  method void constructor(int x, int y) {
     this.x = x;
     this.y = y;
   }
 
-  int somme() {
+  method int somme() {
     return this.x + this.y;
   }
 }
 
 class triple extends paire {
-  int z;
+  attribute int z;
 
-  void constructor(int x, int y, int z) {
+  method void constructor(int x, int y, int z) {
     this.x = x;
     this.y = y;
     this.z = z;
   }
 
-  int somme() {
+  method int somme() {
     return this.x + this.y + this.z;
   }
 
-  int produit() {
+  method int produit() {
     return this.x * this.y * this.z;
   }
 }

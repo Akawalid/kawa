@@ -1,9 +1,9 @@
-test p;
+var test p;
 
 class test {
-    bool [][] array, array2;
+    attribute bool [][] array, array2;
 
-    void constructor(){
+    method void constructor(){
         this.array = new bool[3][];
         this.array2 = [
             [true; true];
@@ -11,7 +11,7 @@ class test {
         ];
     }
 
-    void init(){
+    method void init(){
         //================= TEST 1 =================
         //0[this.array] = new int[2];
         0[this.array] = new bool[2];

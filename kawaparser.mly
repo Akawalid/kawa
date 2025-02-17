@@ -41,14 +41,10 @@
 %token LPAR RPAR RBRACK LBRACK BEGIN END SEMI COMMA DOT
 %token MINUS PLUS MUL DIV MOD
 %token NEG EQUAL NEQ LT LE GT GE AND OR TRUE FALSE INSTANCEOF
-%token STATIC FINAL PROTECTED PRIVATE CLASS EXTENDS ABSTRACT
+%token STATIC FINAL PROTECTED PRIVATE CLASS EXTENDS ABSTRACT ATTRIBUTE VAR METHODE
 %token ASSIGN PRINT NEW THIS IF ELSE
 %token WHILE RETURN TINT TBOOL TVOID
 %token EOF NULL
-
-%nonassoc TVOID
-%nonassoc REDUCE_PREFERENCE
-%nonassoc TINT TBOOL STATIC PROTECTED PRIVATE IDENT
 
 %left OR
 %left AND
@@ -122,12 +118,12 @@ abs_method_params:
 ;
 
 var_decl:
-| tho=typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI
+| VAR tho=typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI
   {List.map (fun (id, e) -> id, tho, e) ld}
 ;
 
 var_decl_l:
-| %prec REDUCE_PREFERENCE { [] }
+| { [] }
 | var_decl var_decl_l { $1 :: $2 }
 ;
 
@@ -142,96 +138,96 @@ ident_and_maybe_initialisation:
 *)
 
 att_decl:
-| STATIC FINAL PROTECTED typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $4, Protected, true, e) ld }
-| FINAL STATIC PROTECTED typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $4, Protected, true, e) ld }
-| FINAL PROTECTED STATIC typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $4, Protected, true, e) ld }
-| PROTECTED FINAL STATIC typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $4, Protected, true, e) ld }
-| STATIC PROTECTED FINAL typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $4, Protected, true, e) ld }
-| PROTECTED STATIC FINAL typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $4, Protected, true, e) ld }
+| ATTRIBUTE STATIC FINAL PROTECTED typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $5 , Protected, true, e) ld }
+| ATTRIBUTE FINAL STATIC PROTECTED typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $5, Protected, true, e) ld }
+| ATTRIBUTE FINAL PROTECTED STATIC typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $5, Protected, true, e) ld }
+| ATTRIBUTE PROTECTED FINAL STATIC typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $5, Protected, true, e) ld }
+| ATTRIBUTE STATIC PROTECTED FINAL typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $5, Protected, true, e) ld }
+| ATTRIBUTE PROTECTED STATIC FINAL typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $5, Protected, true, e) ld }
 
-| FINAL STATIC PRIVATE typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $4, Private, true, e) ld }
-| STATIC FINAL PRIVATE typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $4, Private, true, e) ld }
-| FINAL PRIVATE STATIC typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $4, Private, true, e) ld }
-| STATIC PRIVATE FINAL typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $4, Private, true, e) ld }
-| PRIVATE FINAL STATIC typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $4, Private, true, e) ld }
-| PRIVATE STATIC FINAL typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $4, Private, true, e) ld }
+| ATTRIBUTE FINAL STATIC PRIVATE typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $5, Private, true, e) ld }
+| ATTRIBUTE STATIC FINAL PRIVATE typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $5, Private, true, e) ld }
+| ATTRIBUTE FINAL PRIVATE STATIC typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $5, Private, true, e) ld }
+| ATTRIBUTE STATIC PRIVATE FINAL typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $5, Private, true, e) ld }
+| ATTRIBUTE PRIVATE FINAL STATIC typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $5, Private, true, e) ld }
+| ATTRIBUTE PRIVATE STATIC FINAL typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $5, Private, true, e) ld }
 
-| FINAL STATIC typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $3, PackagePrivate, true, e) ld}
-| STATIC FINAL typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $3, PackagePrivate, true, e) ld}
+| ATTRIBUTE FINAL STATIC typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $4, PackagePrivate, true, e) ld}
+| ATTRIBUTE STATIC FINAL typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $4, PackagePrivate, true, e) ld}
 
-| FINAL PRIVATE typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { false, List.map (fun (id, e) -> id, $3, Private, true, e) ld}
-| PRIVATE FINAL typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { false, List.map (fun (id, e) -> id, $3, Private, true, e) ld}
+| ATTRIBUTE FINAL PRIVATE typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { false, List.map (fun (id, e) -> id, $4, Private, true, e) ld}
+| ATTRIBUTE PRIVATE FINAL typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { false, List.map (fun (id, e) -> id, $4, Private, true, e) ld}
 
-| FINAL PROTECTED typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { false, List.map (fun (id, e) -> id, $3, Protected, true, e) ld}
-| PROTECTED FINAL typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { false, List.map (fun (id, e) -> id, $3, Protected, true, e) ld}
+| ATTRIBUTE FINAL PROTECTED typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { false, List.map (fun (id, e) -> id, $4, Protected, true, e) ld}
+| ATTRIBUTE PROTECTED FINAL typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { false, List.map (fun (id, e) -> id, $4, Protected, true, e) ld}
 
-| PRIVATE STATIC typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $3, Private, false, e) ld}
-| STATIC PRIVATE typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $3, Private, false, e) ld}
+| ATTRIBUTE PRIVATE STATIC typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $4, Private, false, e) ld}
+| ATTRIBUTE STATIC PRIVATE typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $4, Private, false, e) ld}
 
-| PROTECTED STATIC typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $3, Protected, false, e) ld}
-| STATIC PROTECTED typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $3, Protected, false, e) ld}
+| ATTRIBUTE PROTECTED STATIC typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $4, Protected, false, e) ld}
+| ATTRIBUTE STATIC PROTECTED typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $4, Protected, false, e) ld}
 
-| STATIC typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $2, PackagePrivate, false, e) ld }
-| FINAL typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { false, List.map (fun (id, e) -> id, $2, PackagePrivate, true, e) ld}
-| PRIVATE typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { false, List.map (fun (id, e) -> id, $2, Private, false, e) ld }
-| PROTECTED typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { false, List.map (fun (id, e) -> id, $2, Protected, false, e) ld}
+| ATTRIBUTE STATIC typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { true, List.map (fun (id, e) -> id, $3, PackagePrivate, false, e) ld }
+| ATTRIBUTE FINAL typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { false, List.map (fun (id, e) -> id, $3, PackagePrivate, true, e) ld}
+| ATTRIBUTE PRIVATE typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { false, List.map (fun (id, e) -> id, $3, Private, false, e) ld }
+| ATTRIBUTE PROTECTED typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { false, List.map (fun (id, e) -> id, $3, Protected, false, e) ld}
 
-| typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { false, List.map (fun (id, e) -> id, $1, PackagePrivate, false, e) ld}
+| ATTRIBUTE typ ld=separated_nonempty_list(COMMA, ident_and_maybe_initialisation) SEMI { false, List.map (fun (id, e) -> id, $2, PackagePrivate, false, e) ld}
 
 l_att_decl:
-|  %prec REDUCE_PREFERENCE { [] }
+| { [] }
 | att_decl l_att_decl { $1 :: $2 }
 ;
 
 method_def:
-| STATIC PRIVATE tho=typ id=IDENT LPAR params=params RPAR BEGIN
+| METHODE STATIC PRIVATE tho=typ id=IDENT LPAR params=params RPAR BEGIN
   locals=var_decl_l
   code=list(instruction)
  END { create_meth_object true id Private code params (List.flatten locals) tho }
 
-| STATIC PROTECTED tho=typ id=IDENT LPAR params=params RPAR BEGIN
+| METHODE STATIC PROTECTED tho=typ id=IDENT LPAR params=params RPAR BEGIN
 locals=var_decl_l
 code=list(instruction)
 END { create_meth_object true id Protected code params (List.flatten locals) tho }
 
-| PRIVATE STATIC tho=typ id=IDENT LPAR params=params RPAR BEGIN
+| METHODE PRIVATE STATIC tho=typ id=IDENT LPAR params=params RPAR BEGIN
   locals=var_decl_l
   code=list(instruction)
  END { create_meth_object true id Private code params (List.flatten locals) tho }
 
-| PROTECTED STATIC tho=typ id=IDENT LPAR params=params RPAR BEGIN
+| METHODE PROTECTED STATIC tho=typ id=IDENT LPAR params=params RPAR BEGIN
 locals=var_decl_l
 code=list(instruction)
 END { create_meth_object true id Protected code params (List.flatten locals) tho }
 
-| STATIC tho=typ id=IDENT LPAR params=params RPAR BEGIN
+| METHODE STATIC tho=typ id=IDENT LPAR params=params RPAR BEGIN
 locals=var_decl_l
 code=list(instruction)
 END { create_meth_object true id PackagePrivate code params (List.flatten locals) tho }
 
-| PRIVATE tho=typ id=IDENT LPAR params=params RPAR BEGIN
+| METHODE PRIVATE tho=typ id=IDENT LPAR params=params RPAR BEGIN
   locals=var_decl_l
   code=list(instruction)
  END { create_meth_object false id Private code params (List.flatten locals) tho}
 
-| PROTECTED tho=typ id=IDENT LPAR params=params RPAR BEGIN
+| METHODE PROTECTED tho=typ id=IDENT LPAR params=params RPAR BEGIN
   locals=var_decl_l
   code=list(instruction)
  END { create_meth_object false id Protected code params (List.flatten locals) tho}
 
-| tho=typ id=IDENT LPAR params=params RPAR BEGIN
+| METHODE tho=typ id=IDENT LPAR params=params RPAR BEGIN
   locals=var_decl_l
   code=list(instruction)
  END { create_meth_object false id PackagePrivate code params (List.flatten locals) tho}
 
   
-| ABSTRACT PROTECTED tho=typ id=IDENT LPAR params=abs_method_params RPAR SEMI
+| METHODE ABSTRACT PROTECTED tho=typ id=IDENT LPAR params=abs_method_params RPAR SEMI
  { create_abs_meth_object id Protected params tho}
  
-| ABSTRACT tho=typ id=IDENT LPAR params=abs_method_params RPAR SEMI 
+| METHODE ABSTRACT tho=typ id=IDENT LPAR params=abs_method_params RPAR SEMI 
 { create_abs_meth_object id PackagePrivate params tho}
  
-| PROTECTED ABSTRACT tho=typ id=IDENT LPAR params=abs_method_params RPAR SEMI
+| METHODE PROTECTED ABSTRACT tho=typ id=IDENT LPAR params=abs_method_params RPAR SEMI
  { create_abs_meth_object id Protected params tho}
 ;
 

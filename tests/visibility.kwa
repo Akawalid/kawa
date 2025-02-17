@@ -1,32 +1,32 @@
-p1 p;
+var p1 p;
 
 class p0 {
-    private int a0;
-    protected int a1;
-    int a2; 
+    attribute private int a0;
+    attribute protected int a1;
+    attribute int a2; 
 
-    void constructor(){
+    method void constructor(){
         this.a0 = 5;
         this.a1 = 6;
     }
 
-    protected void p(){
+    method protected void p(){
     }
 
 }
 
 class p1 extends p0 {
-    private int s;
-    private static final bool f = true;
+    attribute private int s;
+    attribute private static final bool f = true;
 
-    void constructor(int s0){
+    method void constructor(int s0){
         this.s = s0;
         this.a1 = 10;
         //=============================== TEST 01 =====================
         //this.a0 = 5;
     }
 
-    void afficher(){
+    method void afficher(){
         print(this.s);
         print(this.a1);
         if(p1.f){

@@ -1,14 +1,14 @@
-segment s;
-point p;
+var segment s;
+var point p;
 
 class point {
-  int x;
-  int y;
+  attribute int x;
+  attribute int y;
 }
 
 class segment {
-  point a;
-  point b;
+  attribute point a;
+  attribute point b;
 }
 
 main {

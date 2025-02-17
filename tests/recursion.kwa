@@ -1,4 +1,4 @@
- recursion a;
+var recursion a;
 var int aa, b=4, c=2;
 
 class recursion {
@@ -15,5 +15,5 @@ class recursion {
 
 main {
   a = new recursion;
-  print(aa);
+  print(a.fibo(5));
 }

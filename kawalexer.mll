@@ -11,6 +11,9 @@
         "static", STATIC;
         "final", FINAL;
         "private", PRIVATE;
+        "attribute", ATTRIBUTE;
+        "var", VAR;
+        "method", METHODE;
         "protected", PROTECTED;
         "null", NULL;
         "instanceof", INSTANCEOF;

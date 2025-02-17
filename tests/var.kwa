@@ -1,5 +1,5 @@
-int x;
-int y;
+var int x;
+var int y;
 
 main {
   x = 1;

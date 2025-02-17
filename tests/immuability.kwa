@@ -1,21 +1,21 @@
-testFinal tf;
+var testFinal tf;
 
 /*=================TEST N01 ====================
 class testFinal {
-    static final int a = 42, b;
-    void constructor() {
+    attribute static final int a = 42, b;
+    method void constructor() {
     }
 }
 */
 
 /*=================TEST N02 ====================
 class testFinal {
-    static final int a = 42;
-    final int [] tab;
-    void constructor() {
+    attribute static final int a = 42;
+    attribute final int [] tab;
+    method void constructor() {
 
     }
-    void p(){
+    method void p(){
         this.tab = [1];
     }
 }
@@ -24,13 +24,13 @@ class testFinal {
 /*=================TEST N03 ====================*/
 class p0 {
     //=================TEST N04 ===================
-    //private final int [] tab;
-    final int [] tab;
+    //attribute private final int [] tab;
+    attribute final int [] tab;
 }
 
 class testFinal extends p0 {
-    static final int a = 42;
-    void constructor() {
+    attribute static final int a = 42;
+    method void constructor() {
         this.tab = new int[2];
         0[this.tab] = 0;
         //==========TEST N05============
